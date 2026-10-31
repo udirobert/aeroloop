@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>AeroLoop — Self-Improving Air Quality Agent</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 0; background: #0b1220; color: #e6edf3; }
+    header { padding: 16px 24px; background: #111827; border-bottom: 1px solid #1f2937; }
+    h1 { margin: 0; font-size: 20px; }
+    .subtitle { color: #9ca3af; font-size: 13px; }
+    main { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 16px 24px; }
+    .card { background: #111827; border: 1px solid #1f2937; border-radius: 8px; padding: 16px; }
+    .card h2 { margin-top: 0; font-size: 16px; }
+    button { background: #3b82f6; color: white; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; margin-right: 8px; }
+    button:hover { background: #2563eb; }
+    pre { background: #0b1220; padding: 12px; border-radius: 6px; overflow: auto; font-size: 12px; max-height: 320px; }
+    .map { height: 260px; background: linear-gradient(135deg,#1e3a5f,#0b1220); border-radius: 6px; display:flex; align-items:center; justify-content:center; color:#9ca3af; }
+    .metric { display: inline-block; margin-right: 24px; }
+    .metric .val { font-size: 24px; font-weight: 700; }
+    .metric .lbl { font-size: 11px; color: #9ca3af; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🌫️ AeroLoop</h1>
+    <div class="subtitle">Self-improving PM2.5 air-quality agent — London. Open-weight model, local-first.</div>
+  </header>
+  <main>
+    <div class="card">
+      <h2>Interactive Map (London)</h2>
+      <div class="map">Map placeholder — MapLibre/Mapbox integration (Priority 3)</div>
+      <p style="color:#9ca3af;font-size:13px;">Stations: Bloomsbury, Marylebone, North Kensington, Westminster</p>
+    </div>
+    <div class="card">
+      <h2>Actions</h2>
+      <button onclick="predict()">Predict PM2.5 (v1)</button>
+      <button onclick="groundTruth()">Fetch Ground Truth</button>
+      <button onclick="evaluate()">Evaluate v1</button>
+      <button onclick="selfImprove()">Self-Improve</button>
+      <div id="status" style="margin-top:12px;color:#9ca3af;font-size:13px;"></div>
+    </div>
+    <div class="card">
+      <h2>Agent Learning Dashboard</h2>
+      <div id="metrics"></div>
+      <pre id="report">Run "Self-Improve" to see the agent's report.</pre>
+    </div>
+    <div class="card">
+      <h2>Errors / Predictions</h2>
+      <pre id="errors">—</pre>
+    </div>
+  </main>
+  <script>
+    const API = '';
+    async function predict() {
+      const r = await fetch(API + '/predict', { method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ station_id: 'bloomsbury', strategy_version: 'v1-baseline' }) });
+      const d = await r.json();
+      document.getElementById('status').textContent = 'Predicted: ' + d.prediction.predicted_pm25 + ' ug/m3 (id ' + d.prediction_id + ')';
+    }
+    async function groundTruth() {
+      const preds = await (await fetch(API + '/evaluate?strategy_version=v1-baseline')).json();
+      // fetch last prediction id via errors endpoint is simpler; use stored id from status
+      const id = (document.getElementById('status').textContent.match(/id (\d+)/) || [])[1];
+      if (!id) { document.getElementById('status').textContent = 'Predict first.'; return; }
+      const r = await fetch(API + `/ground-truth?station_id=bloomsbury&prediction_id=${id}`, { method: 'POST' });
+      const d = await r.json();
+      document.getElementById('status').textContent += ' | Ground truth: ' + d.measured_pm25.toFixed(2) + ' (err ' + d.error.toFixed(2) + ')';
+    }
+    async function evaluate() {
+      const r = await fetch(API + '/evaluate?strategy_version=v1-baseline');
+      const d = await r.json();
+      document.getElementById('metrics').innerHTML =
+        `<span class="metric"><div class="val">${d.mae}</div><div class="lbl">MAE</div></span>
+         <span class="metric"><div class="val">${d.rmse}</div><div class="lbl">RMSE</div></span>
+         <span class="metric"><div class="val">${d.bias}</div><div class="lbl">Bias</div></span>
+         <span class="metric"><div class="val">${d.n}</div><div class="lbl">n</div></span>`;
+    }
+    async function selfImprove() {
+      const r = await fetch(API + '/self-improve', { method: 'POST' });
+      const d = await r.json();
+      document.getElementById('report').textContent = JSON.stringify(d, null, 2);
+      const e = await (await fetch(API + '/errors')).json();
+      document.getElementById('errors').textContent = JSON.stringify(e.slice(-5), null, 2);
+    }
+  </script>
+</body>
+</html>
