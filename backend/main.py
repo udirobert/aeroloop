@@ -55,7 +55,10 @@ def _resolve_strategy(version: str) -> Tuple[str, Dict[str, Any]]:
         return "v2", dict(prediction.STRATEGY_REGISTRY["v2-improved"]["params"])
     stored = next((s for s in db.get_strategies() if s["version"] == version), None)
     if stored:
-        return "v2", json.loads(stored["params"])
+        params = json.loads(stored["params"])
+        if params.get("kind") == "tabpfn":
+            raise HTTPException(400, "tabpfn strategies are audit records; live prediction uses parametric strategies")
+        return "v2", params
     raise HTTPException(400, f"unknown strategy '{version}'")
 
 

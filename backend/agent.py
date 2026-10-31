@@ -26,6 +26,24 @@ LLM_BASE_URL = os.getenv("LLM_BASE_URL", "http://localhost:11434/v1")
 LLM_MODEL = os.getenv("LLM_MODEL", "nemotron-mini:latest")
 LLM_API_KEY = os.getenv("LLM_API_KEY", "ollama")
 
+
+def _endpoints() -> List[Tuple[str, str, str]]:
+    """OpenAI-compatible endpoints tried in order: primary -> fallback -> local."""
+    eps = [(LLM_BASE_URL, LLM_MODEL, LLM_API_KEY)]
+    fb_base = os.getenv("LLM_FALLBACK_BASE_URL")
+    if fb_base:
+        eps.append((
+            fb_base,
+            os.getenv("LLM_FALLBACK_MODEL", LLM_MODEL),
+            os.getenv("LLM_FALLBACK_API_KEY", ""),
+        ))
+    eps.append((
+        os.getenv("LLM_LOCAL_BASE_URL", "http://localhost:11434/v1"),
+        os.getenv("LLM_LOCAL_MODEL", "nemotron-mini:latest"),
+        os.getenv("LLM_LOCAL_API_KEY", "ollama"),
+    ))
+    return eps
+
 # sane bounds for anything the LLM proposes
 PARAM_BOUNDS = {
     "humidity_coef": (-0.5, 0.5),
@@ -36,8 +54,8 @@ PARAM_BOUNDS = {
 HOLDOUT_FRACTION = 1 / 3
 
 
-def _client() -> OpenAI:
-    return OpenAI(base_url=LLM_BASE_URL, api_key=LLM_API_KEY)
+def _client(base_url: str, api_key: str) -> OpenAI:
+    return OpenAI(base_url=base_url, api_key=api_key, timeout=90)
 
 
 def _clamp(params: Dict[str, Any]) -> Dict[str, float]:
@@ -94,55 +112,59 @@ def analyse_errors(
         "change_made": "Adjusted bias/humidity terms (heuristic fallback).",
         "why_it_should_help": "Bias correction counters systematic under/over-prediction.",
     }
-    try:
-        client = _client()
-        # compact stats + a few samples — small open-weight models handle short
-        # prompts with a concrete example far better than raw dumps
-        per_station = {
-            s: round(sum(v) / len(v), 2) for s, v in by_station.items()
-        }
-        prompt = (
-            "You are the reasoning core of a self-improving air-quality agent.\n"
-            "Strategy: pred = pm25_model + humidity_coef*(humidity-50) "
-            "+ wind_coef*(wind-5) + precip_coef*precipitation + bias\n"
-            f"Current params: {json.dumps(current_params)}\n"
-            f"Tune-set stats: mean_error={avg_err:+.2f} ug/m3 "
-            f"(negative = under-predicting), n={len(tune_errors)}, "
-            f"mean_error_by_station={json.dumps(per_station)}\n"
-            f"Sample errors (station, predicted, actual, error): "
-            f"{json.dumps(tune_errors[:8])}\n\n"
-            "Propose new params to reduce systematic error. Be conservative.\n"
-            "Reply ONLY with JSON like:\n"
-            '{"what_went_wrong": "...", "pattern_discovered": "...", '
-            '"change_made": "...", "why_it_should_help": "...", '
-            '"proposed_params": {"humidity_coef": -0.05, "wind_coef": -0.3, '
-            '"precip_coef": -0.5, "bias": 2.0}}'
-        )
-        resp = client.chat.completions.create(
-            model=LLM_MODEL,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.2,
-            timeout=90,
-        )
-        raw = resp.choices[0].message.content or ""
-        parsed = _parse_llm_json(raw)
-        prose_ok = False
-        for k in ("what_went_wrong", "pattern_discovered", "change_made", "why_it_should_help"):
-            if isinstance(parsed.get(k), str):
-                analysis[k] = parsed[k]
-                prose_ok = True
-        proposed = parsed.get("proposed_params")
-        if isinstance(proposed, dict):
-            return analysis, _clamp(proposed), LLM_MODEL
-        return (
-            analysis,
-            None,
-            f"{LLM_MODEL} (analysis only; heuristic params)" if prose_ok
-            else "unusable output (heuristic fallback)",
-        )
-    except Exception as e:
-        print(f"[aeroloop] LLM call failed: {e!r}", file=sys.stderr)
-        return analysis, None, "unavailable (heuristic fallback)"
+    # compact stats + a few samples — small open-weight models handle short
+    # prompts with a concrete example far better than raw dumps
+    per_station = {s: round(sum(v) / len(v), 2) for s, v in by_station.items()}
+    prompt = (
+        "You are the reasoning core of a self-improving air-quality agent.\n"
+        "Strategy: pred = pm25_model + humidity_coef*(humidity-50) "
+        "+ wind_coef*(wind-5) + precip_coef*precipitation + bias\n"
+        f"Current params: {json.dumps(current_params)}\n"
+        f"Tune-set stats: mean_error={avg_err:+.2f} ug/m3 "
+        f"(negative = under-predicting), n={len(tune_errors)}, "
+        f"mean_error_by_station={json.dumps(per_station)}\n"
+        f"Sample errors (station, predicted, actual, error): "
+        f"{json.dumps(tune_errors[:8])}\n\n"
+        "Propose new params to reduce systematic error. Be conservative: small "
+        "changes from the current values. NOTE: bias POSITIVE raises predictions.\n"
+        "Reply ONLY with JSON in this shape (numbers are yours to choose):\n"
+        '{"what_went_wrong": "...", "pattern_discovered": "...", '
+        '"change_made": "...", "why_it_should_help": "...", '
+        '"proposed_params": {"humidity_coef": 0, "wind_coef": 0, '
+        '"precip_coef": 0, "bias": 0}}'
+    )
+    for base_url, model, api_key in _endpoints():
+        for attempt in range(2):  # one retry — :free tiers rate-limit transiently
+            try:
+                resp = _client(base_url, api_key).chat.completions.create(
+                    model=model,
+                    messages=[{"role": "user", "content": prompt}],
+                    temperature=0.2,
+                    max_tokens=512,
+                )
+            except Exception as e:
+                if attempt == 0 and "429" in repr(e):
+                    import time
+                    time.sleep(3)
+                    continue  # retry once on rate limit
+                print(f"[aeroloop] LLM call failed on {model} @ {base_url}: {e!r}", file=sys.stderr)
+                break
+            parsed = _parse_llm_json(resp.choices[0].message.content or "")
+            prose_ok = False
+            for k in ("what_went_wrong", "pattern_discovered", "change_made", "why_it_should_help"):
+                if isinstance(parsed.get(k), str):
+                    analysis[k] = parsed[k]
+                    prose_ok = True
+            proposed = parsed.get("proposed_params")
+            if isinstance(proposed, dict):
+                return analysis, _clamp(proposed), model
+            if prose_ok:
+                # reasoned fine but didn't propose params — report it and stop
+                return analysis, None, f"{model} (analysis only; heuristic params)"
+            print(f"[aeroloop] {model} @ {base_url} returned unusable output; trying next endpoint",
+                  file=sys.stderr)
+            break
+    return analysis, None, "unavailable (heuristic fallback)"
 
 
 def heuristic_params(current: Dict[str, Any], tune_errors: List[Dict[str, Any]]) -> Dict[str, float]:
@@ -189,21 +211,65 @@ def _ver_num(version: str) -> int:
     return int(head) if head.isdigit() else -1
 
 
+TABPFN_FEATURES = ["pm25_model", "no2_model", "humidity", "wind_speed", "temperature", "precipitation"]
+
+
+def _vec(inputs: Dict[str, Any]) -> List[float]:
+    return [float(inputs.get(f) or 0.0) for f in TABPFN_FEATURES]
+
+
+def _score_tabpfn(tune: List[Dict[str, Any]], holdout: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    """Foundation-model challenger: TabPFN regressor trained on the tune split,
+    scored on the same holdout as every other candidate. Needs
+    TABPFN_ACCESS_TOKEN (free after signing Prior Labs' non-commercial licence)."""
+    token = os.getenv("TABPFN_ACCESS_TOKEN")
+    if not token or len(tune) < 8 or not holdout:
+        return None
+    try:
+        import tabpfn_client
+
+        tabpfn_client.set_access_token(token)
+        reg = tabpfn_client.TabPFNRegressor()
+        reg.fit([_vec(m["inputs"]) for m in tune], [m["actual"] for m in tune])
+        preds = reg.predict([_vec(m["inputs"]) for m in holdout])
+        paired = [
+            {"station_id": m["station_id"], "timestamp": m["timestamp"],
+             "predicted_pm25": float(p)}
+            for m, p in zip(holdout, preds)
+        ]
+        readings = [
+            {"station_id": m["station_id"], "timestamp": m["timestamp"], "measured_pm25": m["actual"]}
+            for m in holdout
+        ]
+        return evaluation.evaluate(paired, readings)
+    except Exception as e:
+        print(f"[aeroloop] tabpfn challenger failed: {e!r}", file=sys.stderr)
+        return {"error": str(e)}
+
+
 def _next_version(accepted: bool) -> str:
     v = f"v{max((_ver_num(s['version']) for s in db.get_strategies()), default=2) + 1}"
     return v if accepted else f"{v}-rejected"
 
 
 def _incumbent() -> Tuple[str, Dict[str, Any]]:
-    """Highest-numbered accepted parametric strategy; falls back to v2 defaults."""
-    strategies = [
-        s for s in db.get_strategies()
-        if not s["version"].startswith("v1") and not s["version"].endswith("-rejected")
-    ]
+    """Highest-numbered accepted *parametric* strategy; falls back to v2 defaults.
+    TabPFN-kind rows are recorded for audit but don't serve live predictions yet."""
+    strategies = []
+    for s in db.get_strategies():
+        if s["version"].startswith("v1") or s["version"].endswith("-rejected"):
+            continue
+        try:
+            params = json.loads(s["params"])
+        except json.JSONDecodeError:
+            continue
+        if params.get("kind") == "tabpfn":
+            continue
+        strategies.append((s, params))
     if not strategies:
         return "v2-improved", dict(prediction.STRATEGY_REGISTRY["v2-improved"]["params"])
-    latest = max(strategies, key=lambda s: _ver_num(s["version"]))
-    return latest["version"], json.loads(latest["params"])
+    latest, params = max(strategies, key=lambda t: _ver_num(t[0]["version"]))
+    return latest["version"], params
 
 
 def run_self_improvement(matched: List[Dict[str, Any]]) -> Dict[str, Any]:
@@ -231,6 +297,23 @@ def run_self_improvement(matched: List[Dict[str, Any]]) -> Dict[str, Any]:
         parent_version=incumbent_version,
     ))
 
+    # foundation-model challenger: same tune split, same holdout gate
+    challengers = []
+    tabpfn = _score_tabpfn(tune, holdout)
+    if tabpfn is not None:
+        challengers.append({"name": "TabPFN-Regressor", "result": tabpfn})
+        tabpfn_mae = tabpfn.get("mae", float("nan")) if isinstance(tabpfn, dict) else float("nan")
+        best = min(before["mae"], after["mae"]) if not math.isnan(after["mae"]) else before["mae"]
+        if not math.isnan(tabpfn_mae) and tabpfn_mae < best:
+            db.save_strategy(Strategy(
+                version=f"{_next_version(accepted=True)}-tabpfn",
+                description=f"TabPFN regressor (Prior Labs) beat the formula on holdout "
+                f"(MAE {tabpfn_mae} vs {best}). Trained on tune split only.",
+                params={"kind": "tabpfn", "features": TABPFN_FEATURES},
+                created_at=datetime.utcnow(),
+                parent_version=incumbent_version,
+            ))
+
     return {
         "what_went_wrong": analysis["what_went_wrong"],
         "pattern_discovered": analysis["pattern_discovered"],
@@ -246,4 +329,5 @@ def run_self_improvement(matched: List[Dict[str, Any]]) -> Dict[str, Any]:
         "after": after,
         "params": candidate_params if improved else incumbent_params,
         "proposed_params": candidate_params,
+        "challengers": challengers,
     }

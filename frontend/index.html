@@ -154,7 +154,9 @@
             MAE ${d.before.mae} → ${d.after.mae} · tune n=${d.tune_n}, holdout n=${d.holdout_n}
             · params via ${d.params_source} · model: ${d.model_used}
           </span>
-        </div>`;
+        </div>
+        ${(d.challengers || []).map(c => `<div style="margin-top:10px;font-size:13px;color:#9aa3b8">
+          Challenger <code>${c.name}</code>: ${c.result.error ? 'unavailable (' + c.result.error.slice(0,80) + '…)' : 'holdout MAE ' + c.result.mae + ' vs ' + Math.min(d.before.mae, d.after.mae)}</div>`).join('')}`;
       status(d.improved
         ? `Agent kept a new strategy (parent ${d.incumbent_version}) — it improved on unseen data.`
         : `Agent rejected its own proposal — holdout MAE did not improve. Honest failure, still remembered.`);
