@@ -6,7 +6,7 @@ import os
 import random
 import sys
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
 sys.path.insert(0, os.path.dirname(__file__))
 
@@ -39,7 +39,8 @@ def _startup():
     existing = {s["version"] for s in db.get_strategies()}
     for v, desc, params in [
         ("v1-baseline", "Trust CAMS model PM2.5 with light humidity correction.", {}),
-        ("v2-improved", "Model PM2.5 + humidity/wind/precip correction + bias.", prediction.STRATEGY_REGISTRY["v2-improved"]["params"]),
+        ("v2-improved", "Model PM2.5 + humidity/wind/precip correction + bias.",
+         prediction.STRATEGY_REGISTRY["v2-improved"]["params"]),
     ]:
         if v not in existing:
             db.save_strategy(Strategy(version=v, description=desc, params=params, created_at=datetime.utcnow()))
@@ -130,7 +131,8 @@ def ground_truth(station_id: str, prediction_id: int):
     ts = datetime.fromisoformat(target["timestamp"])
     model_pm25 = (json.loads(target["inputs"]).get("pm25_model") if target["inputs"] else None) or 10.0
     actual = data_sources.synthetic_ground_reading(station_id, ts, model_pm25)
-    reading = GroundReading(station_id=station_id, timestamp=ts, measured_pm25=actual, source="synthetic (offline stand-in)")
+    reading = GroundReading(station_id=station_id, timestamp=ts,
+                            measured_pm25=actual, source="synthetic (offline stand-in)")
     rid = db.save_reading(reading)
     err = target["predicted_pm25"] - actual
     db.save_error(ErrorRecord(

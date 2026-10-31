@@ -30,7 +30,6 @@ def improved_v2(features: Dict[str, Any], params: Dict[str, Any]) -> float:
         return 0.0
     humidity = features.get("humidity") or 50.0
     wind = features.get("wind_speed") or 5.0
-    temp = features.get("temperature") or 15.0
     precip = features.get("precipitation") or 0.0
 
     humidity_coef = params.get("humidity_coef", -0.05)
@@ -48,11 +47,16 @@ def improved_v2(features: Dict[str, Any], params: Dict[str, Any]) -> float:
 
 STRATEGY_REGISTRY = {
     "v1-baseline": {"fn": baseline_v1, "params": {}},
-    "v2-improved": {"fn": improved_v2, "params": {"humidity_coef": -0.05, "wind_coef": -0.3, "precip_coef": -0.5, "bias": 2.0}},
+    "v2-improved": {
+        "fn": improved_v2,
+        "params": {"humidity_coef": -0.05, "wind_coef": -0.3, "precip_coef": -0.5, "bias": 2.0},
+    },
 }
 
 
-def predict(strategy_version: str, features: Dict[str, Any], params: Dict[str, Any] | None = None) -> float:
+def predict(
+    strategy_version: str, features: Dict[str, Any], params: Dict[str, Any] | None = None
+) -> float:
     entry = STRATEGY_REGISTRY[strategy_version]
     fn = entry["fn"]
     p = params if params is not None else entry["params"]

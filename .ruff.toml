@@ -1,0 +1,8 @@
+line-length = 120
+
+[lint]
+select = ["E", "F", "W"]
+
+[lint.per-file-ignores]
+# dotenv must load before backend modules read env vars at import time
+"backend/main.py" = ["E402"]

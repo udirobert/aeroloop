@@ -11,8 +11,8 @@ Scientific notes:
 from __future__ import annotations
 
 import os
-from datetime import datetime, timedelta, timezone
-from typing import Dict, List
+from datetime import datetime, timezone
+from typing import Dict
 
 import httpx
 

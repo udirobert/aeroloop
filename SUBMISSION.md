@@ -114,7 +114,7 @@ imagination; the holdout is the judge; the graveyard is the audit trail.
 
 ## Try it
 
-[REPO LINK]
+**Repo:** https://github.com/udirobert/aeroloop
 
 ```bash
 cd backend && python -m venv .venv && source .venv/bin/activate

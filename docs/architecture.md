@@ -13,9 +13,9 @@
   1. Split matched pairs chronologically: tune (earlier ~2/3) / holdout (later ~1/3).
   2. Compute incumbent-strategy errors on the **tune** split only.
   3. Ask the open-weight LLM for an analysis AND proposed params (clamped to sane
-     bounds; deterministic heuristic if the model is unreachable or returns junk).
+     bounds; deterministic heuristic if every endpoint fails or returns junk).
   4. Score incumbent and candidate on the **holdout** split — data the tuning step
-     never saw.
+     never saw. A TabPFN foundation-model challenger runs the same gate.
   5. Keep the candidate only if holdout MAE improves; otherwise save it anyway as
      `<v>-rejected` — rejected ideas stay in the record (the ghosts).
 - **db.py** — SQLite (predictions, ground_readings, errors, strategies).
@@ -51,9 +51,14 @@ ground truth arrives  -->  save reading  -->  matched pair
 
 - SQLite over PostGIS for v1 (speed of build). Migrate to Postgres+PostGIS for spatial queries.
 - Synthetic ground readings for the offline demo loop; swap in DEFRA AURN for production.
-- Open-weight model via any OpenAI-compatible endpoint: Ollama locally
-  (`nemotron-mini` by default — no API key, works offline) or hosted Gemma
-  (`gemma2-9b-it` via e.g. Groq) when you want a stronger reasoner. One env var
-  switches; every report records which model ran.
-- No pandas/numpy/sklearn — the strategies are small linear corrections, so the
-  whole backend installs in seconds and runs on anything.
+- Open-weight reasoning via an endpoint chain, tried in order and reported per
+  run: hosted Gemma (`google/gemma-3-27b-it` on Hugging Face's OpenAI-compatible
+  router) → second hosted Gemma (OpenRouter) → local Ollama (`nemotron-mini`,
+  fully offline). `model_used`/`params_source` record which path produced each
+  strategy.
+- **TabPFN challenger** (Prior Labs): when `TABPFN_ACCESS_TOKEN` is set, a
+  tabpfn-client regressor is trained on the tune split and scored on the same
+  holdout. If it beats both candidates it is recorded as a `vN-tabpfn` strategy
+  (audit-only for now — live prediction still uses the parametric incumbent).
+- No torch/sklearn locally — the linear strategies are stdlib math and TabPFN
+  inference is hosted, so the backend installs in seconds and runs on anything.

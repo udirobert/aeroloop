@@ -30,18 +30,20 @@ model's own memory of mistakes, made tangible and measurable.
 
 ## Open innovation
 
-- **Open-weight model at the core:** the audit/analysis runs on any
-  OpenAI-compatible endpoint — `nemotron-mini` via Ollama for a fully offline,
-  zero-cost loop, or hosted **Gemma** (`gemma2-9b-it` via e.g. Groq) for a stronger
-  reasoner. One env var switches; every report records which model ran.
-- **Honest degradation:** if the model can't be reached or returns unusable
+- **Open-weight model at the core:** the audit/analysis runs on an
+  OpenAI-compatible endpoint chain — hosted **Gemma** (`google/gemma-3-27b-it`
+  via Hugging Face's router; OpenRouter Gemma as fallback), then local Ollama
+  (`nemotron-mini`) for a fully offline, zero-cost loop. One env var switches;
+  every report records which model ran.
+- **Honest degradation:** if every model endpoint fails or returns unusable
   output, a deterministic heuristic proposes params instead — and the report
   says exactly which path ran (`model_used`, `params_source`).
+- **TabPFN challenger:** with a Prior Labs token, a tabular foundation model
+  trains on the tune split and faces the same holdout gate as the formula.
 - **Local-first:** prediction data, ground readings and strategy files stay on
   your machine. No vendor lock-in; the agent's "memory" is plain SQLite on disk.
-- **Open-source harness:** FastAPI + stdlib + sqlite3. No pandas/sklearn — the
-  whole backend installs in seconds. Swap the model, swap the data source, swap
-  the strategy — nothing is locked in.
+- **Open-source harness:** FastAPI + stdlib + sqlite3. Swap the model, swap the
+  data source, swap the strategy — nothing is locked in.
 
 ## Quick start
 

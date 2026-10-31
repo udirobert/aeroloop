@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+# AeroLoop pre-commit hook: secrets scan + lint.
+# Install once per clone:
+#   ln -sf ../../scripts/pre-commit .git/hooks/pre-commit
+set -euo pipefail
+
+# --- 1. Secrets scan (staged diff only) ---------------------------------------
+if command -v gitleaks >/dev/null 2>&1; then
+  if ! gitleaks protect --staged --verbose --log-level warn 2>/dev/null; then
+    echo "pre-commit: gitleaks found possible secrets in staged changes." >&2
+    echo "  Remove them or add to .env (gitignored) and retry." >&2
+    exit 1
+  fi
+else
+  # minimal fallback patterns when gitleaks isn't installed
+  PATTERNS='(gsk_[A-Za-z0-9]{20,}|sk-or-v1-[a-f0-9]{40,}|tabpfn_sk_[A-Za-z0-9_-]{20,}|hf_oauth_[A-Za-z0-9]{20,}|hf_[A-Za-z0-9]{30,}|-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----)'
+  if git diff --cached -U0 --diff-filter=ACMRT | grep -nE "$PATTERNS" >/dev/null 2>&1; then
+    echo "pre-commit: possible secret in staged changes (install gitleaks for a real scan)." >&2
+    exit 1
+  fi
+fi
+
+# --- 2. Block committing .env files -------------------------------------------
+if git diff --cached --name-only | grep -E '(^|/)\.env$' >/dev/null 2>&1; then
+  echo "pre-commit: .env files must not be committed (use .env.example)." >&2
+  exit 1
+fi
+
+# --- 3. Python lint ------------------------------------------------------------
+STAGED_PY=$(git diff --cached --name-only --diff-filter=ACMRT | grep '\.py$' || true)
+if [ -n "$STAGED_PY" ]; then
+  if command -v ruff >/dev/null 2>&1; then
+    echo "$STAGED_PY" | xargs ruff check --quiet || {
+      echo "pre-commit: ruff check failed." >&2
+      exit 1
+    }
+  else
+    # syntax-only fallback
+    PY=$(command -v python3 || command -v backend/.venv/bin/python || echo python)
+    for f in $STAGED_PY; do
+      "$PY" -c "import ast,sys; ast.parse(open('$f').read())" || {
+        echo "pre-commit: syntax error in $f" >&2
+        exit 1
+      }
+    done
+    echo "pre-commit: ruff not found, ran syntax check only." >&2
+  fi
+fi
+
+exit 0
