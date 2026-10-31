@@ -4,84 +4,206 @@
   <meta charset="UTF-8" />
   <title>AeroLoop — Self-Improving Air Quality Agent</title>
   <style>
-    body { font-family: system-ui, sans-serif; margin: 0; background: #0b1220; color: #e6edf3; }
-    header { padding: 16px 24px; background: #111827; border-bottom: 1px solid #1f2937; }
-    h1 { margin: 0; font-size: 20px; }
-    .subtitle { color: #9ca3af; font-size: 13px; }
-    main { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 16px 24px; }
-    .card { background: #111827; border: 1px solid #1f2937; border-radius: 8px; padding: 16px; }
-    .card h2 { margin-top: 0; font-size: 16px; }
-    button { background: #3b82f6; color: white; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; margin-right: 8px; }
-    button:hover { background: #2563eb; }
-    pre { background: #0b1220; padding: 12px; border-radius: 6px; overflow: auto; font-size: 12px; max-height: 320px; }
-    .map { height: 260px; background: linear-gradient(135deg,#1e3a5f,#0b1220); border-radius: 6px; display:flex; align-items:center; justify-content:center; color:#9ca3af; }
-    .metric { display: inline-block; margin-right: 24px; }
-    .metric .val { font-size: 24px; font-weight: 700; }
-    .metric .lbl { font-size: 11px; color: #9ca3af; }
+    * { box-sizing: border-box; }
+    body { font-family: system-ui, sans-serif; margin: 0; background: #0a0e1a; color: #e6edf3; }
+    header { padding: 18px 24px; background: #0f1420; border-bottom: 1px solid #232a3a;
+             display: flex; align-items: baseline; gap: 14px; }
+    h1 { margin: 0; font-size: 20px; letter-spacing: .02em; }
+    .ghost { filter: drop-shadow(0 0 8px rgba(168,85,247,.7)); }
+    .subtitle { color: #8b93a7; font-size: 13px; }
+    main { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 16px 24px 32px; }
+    .card { background: #0f1420; border: 1px solid #232a3a; border-radius: 10px; padding: 16px 18px; }
+    .card h2 { margin: 0 0 12px; font-size: 14px; text-transform: uppercase; letter-spacing: .08em; color: #9aa3b8; }
+    .wide { grid-column: 1 / -1; }
+    button { background: #2d3a55; color: #dfe6f3; border: 1px solid #3b4a6b; padding: 8px 14px;
+             border-radius: 7px; cursor: pointer; font-size: 13px; }
+    button:hover { background: #38486a; }
+    button.primary { background: #7c3aed; border-color: #8b5cf6; color: #fff; }
+    button.primary:hover { background: #6d28d9; }
+    select { background: #151c2e; color: #dfe6f3; border: 1px solid #3b4a6b; padding: 7px 10px;
+             border-radius: 7px; font-size: 13px; }
+    .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .controls label { font-size: 12px; color: #8b93a7; margin-left: 8px; }
+    #status { margin-top: 12px; color: #9aa3b8; font-size: 13px; min-height: 18px; }
+    .metric { display: inline-block; margin-right: 32px; }
+    .metric .val { font-size: 28px; font-weight: 700; }
+    .metric .lbl { font-size: 11px; color: #8b93a7; text-transform: uppercase; letter-spacing: .08em; }
+    .badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+    .badge.kept { background: #14532d; color: #86efac; }
+    .badge.rejected { background: #3b2b5c; color: #c4b5fd; }
+    .report-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 20px; font-size: 13px; }
+    .report-grid dt { color: #8b93a7; font-size: 11px; text-transform: uppercase; letter-spacing: .07em; margin-bottom: 2px; }
+    .report-grid dd { margin: 0 0 6px; }
+    table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+    th { text-align: left; color: #8b93a7; font-weight: 600; padding: 6px 8px; border-bottom: 1px solid #232a3a;
+         font-size: 11px; text-transform: uppercase; letter-spacing: .07em; }
+    td { padding: 7px 8px; border-bottom: 1px solid #1a2133; vertical-align: top; }
+    tr.rejected td { opacity: .45; font-style: italic; }
+    tr.rejected td.version::after { content: " 👻"; }
+    code { background: #151c2e; padding: 1px 5px; border-radius: 4px; font-size: 11.5px; }
+    canvas { width: 100%; }
+    .hint { font-size: 12px; color: #6b7386; margin-top: 10px; }
   </style>
 </head>
 <body>
   <header>
-    <h1>🌫️ AeroLoop</h1>
-    <div class="subtitle">Self-improving PM2.5 air-quality agent — London. Open-weight model, local-first.</div>
+    <h1><span class="ghost">👻</span> AeroLoop</h1>
+    <div class="subtitle">A self-improving PM2.5 agent — it remembers every mistake. Open-weight model, local-first.</div>
   </header>
   <main>
     <div class="card">
-      <h2>Interactive Map (London)</h2>
-      <div class="map">Map placeholder — MapLibre/Mapbox integration (Priority 3)</div>
-      <p style="color:#9ca3af;font-size:13px;">Stations: Bloomsbury, Marylebone, North Kensington, Westminster</p>
+      <h2>Control</h2>
+      <div class="controls">
+        <label>Station</label>
+        <select id="station">
+          <option value="bloomsbury">Bloomsbury</option>
+          <option value="marylebone">Marylebone</option>
+          <option value="north_kensington">North Kensington</option>
+          <option value="westminster">Westminster</option>
+        </select>
+        <label>Strategy</label>
+        <select id="strategy"><option value="latest">latest (incumbent)</option><option value="v1-baseline">v1-baseline</option></select>
+        <button onclick="demoDay()">Simulate 24h (all stations)</button>
+        <button onclick="predict()">Predict PM2.5</button>
+        <button onclick="groundTruth()">Fetch Ground Truth</button>
+        <button class="primary" onclick="selfImprove()">Self-Improve</button>
+      </div>
+      <div id="status">Click “Simulate 24h” to give the agent a day of memories, then “Self-Improve”.</div>
+      <div class="hint">Ground truth here is a deterministic synthetic stand-in for DEFRA AURN — flagged as such in the DB.</div>
     </div>
     <div class="card">
-      <h2>Actions</h2>
-      <button onclick="predict()">Predict PM2.5 (v1)</button>
-      <button onclick="groundTruth()">Fetch Ground Truth</button>
-      <button onclick="evaluate()">Evaluate v1</button>
-      <button onclick="selfImprove()">Self-Improve</button>
-      <div id="status" style="margin-top:12px;color:#9ca3af;font-size:13px;"></div>
+      <h2>Evaluation — <span id="evalStrategy">latest</span></h2>
+      <div id="metrics"><span style="color:#6b7386">No matched pairs yet.</span></div>
+    </div>
+    <div class="card wide">
+      <h2>Predicted vs measured PM2.5</h2>
+      <canvas id="chart" height="160"></canvas>
     </div>
     <div class="card">
-      <h2>Agent Learning Dashboard</h2>
-      <div id="metrics"></div>
-      <pre id="report">Run "Self-Improve" to see the agent's report.</pre>
+      <h2>Agent's report</h2>
+      <div id="report"><span style="color:#6b7386">Run “Self-Improve” — the agent will explain what it learned and what it changed.</span></div>
     </div>
     <div class="card">
-      <h2>Errors / Predictions</h2>
-      <pre id="errors">—</pre>
+      <h2>Strategy memory <span style="color:#6b7386;font-weight:400;text-transform:none">— rejected versions stay as ghosts</span></h2>
+      <table>
+        <thead><tr><th>Version</th><th>Parent</th><th>Params</th><th>What it learned</th></tr></thead>
+        <tbody id="strategies"><tr><td colspan="4" style="color:#6b7386">—</td></tr></tbody>
+      </table>
     </div>
   </main>
   <script>
     const API = '';
+    const status = t => document.getElementById('status').textContent = t;
+
+    async function refresh() {
+      const strat = document.getElementById('strategy').value;
+      const d = await (await fetch(API + '/evaluate?strategy_version=' + strat)).json();
+      document.getElementById('evalStrategy').textContent = strat;
+      document.getElementById('metrics').innerHTML = d.n === 0
+        ? '<span style="color:#6b7386">No matched pairs yet.</span>'
+        : `<span class="metric"><div class="val">${d.mae}</div><div class="lbl">MAE</div></span>
+           <span class="metric"><div class="val">${d.rmse}</div><div class="lbl">RMSE</div></span>
+           <span class="metric"><div class="val">${d.bias}</div><div class="lbl">Bias</div></span>
+           <span class="metric"><div class="val">${d.n}</div><div class="lbl">n</div></span>`;
+      drawChart();
+      loadStrategies();
+    }
+
+    async function demoDay() {
+      status('Simulating a day of predictions + ground truth…');
+      const d = await (await fetch(API + '/demo-day?hours=24', { method: 'POST' })).json();
+      status(`Simulated ${d.simulated_pairs} matched pairs across ${d.stations.length} stations.`);
+      refresh();
+    }
+
     async function predict() {
+      status('Predicting…');
       const r = await fetch(API + '/predict', { method: 'POST', headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ station_id: 'bloomsbury', strategy_version: 'v1-baseline' }) });
+        body: JSON.stringify({ station_id: document.getElementById('station').value,
+                               strategy_version: document.getElementById('strategy').value }) });
       const d = await r.json();
-      document.getElementById('status').textContent = 'Predicted: ' + d.prediction.predicted_pm25 + ' ug/m3 (id ' + d.prediction_id + ')';
+      if (d.prediction_id === undefined) { status('Predict failed: ' + JSON.stringify(d)); return; }
+      status(`Predicted ${d.prediction.predicted_pm25} ug/m3 (id ${d.prediction_id}, strategy ${d.prediction.strategy_version}).`);
     }
+
     async function groundTruth() {
-      const preds = await (await fetch(API + '/evaluate?strategy_version=v1-baseline')).json();
-      // fetch last prediction id via errors endpoint is simpler; use stored id from status
-      const id = (document.getElementById('status').textContent.match(/id (\d+)/) || [])[1];
-      if (!id) { document.getElementById('status').textContent = 'Predict first.'; return; }
-      const r = await fetch(API + `/ground-truth?station_id=bloomsbury&prediction_id=${id}`, { method: 'POST' });
+      const cur = document.getElementById('status').textContent;
+      const id = (cur.match(/id (\d+)/) || [])[1];
+      if (!id) { status('Predict first.'); return; }
+      const r = await fetch(API + `/ground-truth?station_id=${document.getElementById('station').value}&prediction_id=${id}`, { method: 'POST' });
       const d = await r.json();
-      document.getElementById('status').textContent += ' | Ground truth: ' + d.measured_pm25.toFixed(2) + ' (err ' + d.error.toFixed(2) + ')';
+      status(cur + ` | Ground truth: ${d.measured_pm25.toFixed(2)} (err ${d.error.toFixed(2)})`);
+      refresh();
     }
-    async function evaluate() {
-      const r = await fetch(API + '/evaluate?strategy_version=v1-baseline');
-      const d = await r.json();
-      document.getElementById('metrics').innerHTML =
-        `<span class="metric"><div class="val">${d.mae}</div><div class="lbl">MAE</div></span>
-         <span class="metric"><div class="val">${d.rmse}</div><div class="lbl">RMSE</div></span>
-         <span class="metric"><div class="val">${d.bias}</div><div class="lbl">Bias</div></span>
-         <span class="metric"><div class="val">${d.n}</div><div class="lbl">n</div></span>`;
-    }
+
     async function selfImprove() {
+      status('Agent is analysing its mistakes…');
       const r = await fetch(API + '/self-improve', { method: 'POST' });
       const d = await r.json();
-      document.getElementById('report').textContent = JSON.stringify(d, null, 2);
-      const e = await (await fetch(API + '/errors')).json();
-      document.getElementById('errors').textContent = JSON.stringify(e.slice(-5), null, 2);
+      if (d.detail) { status('Self-improve failed: ' + JSON.stringify(d.detail)); return; }
+      document.getElementById('report').innerHTML = `
+        <dl class="report-grid">
+          <div><dt>What went wrong</dt><dd>${d.what_went_wrong}</dd></div>
+          <div><dt>Pattern discovered</dt><dd>${d.pattern_discovered}</dd></div>
+          <div><dt>Change made</dt><dd>${d.change_made}</dd></div>
+          <div><dt>Why it should help</dt><dd>${d.why_it_should_help}</dd></div>
+        </dl>
+        <div style="margin-top:14px">
+          <span class="badge ${d.improved ? 'kept' : 'rejected'}">${d.improved ? 'KEPT' : 'REJECTED'} on holdout</span>
+          <span style="color:#9aa3b8;font-size:13px;margin-left:10px">
+            MAE ${d.before.mae} → ${d.after.mae} · tune n=${d.tune_n}, holdout n=${d.holdout_n}
+            · params via ${d.params_source} · model: ${d.model_used}
+          </span>
+        </div>`;
+      status(d.improved
+        ? `Agent kept a new strategy (parent ${d.incumbent_version}) — it improved on unseen data.`
+        : `Agent rejected its own proposal — holdout MAE did not improve. Honest failure, still remembered.`);
+      refresh();
     }
+
+    async function loadStrategies() {
+      const rows = await (await fetch(API + '/strategies')).json();
+      document.getElementById('strategies').innerHTML = rows.map(s => {
+        const rejected = s.version.endsWith('-rejected');
+        return `<tr class="${rejected ? 'rejected' : ''}">
+          <td class="version"><code>${s.version}</code></td>
+          <td>${s.parent_version || '—'}</td>
+          <td><code>${s.params}</code></td>
+          <td>${s.description}</td></tr>`;
+      }).join('');
+      const sel = document.getElementById('strategy');
+      const opts = ['latest', ...rows.filter(s => !s.version.endsWith('-rejected')).map(s => s.version)];
+      const cur = sel.value;
+      sel.innerHTML = opts.map(v => `<option value="${v}" ${v === cur ? 'selected' : ''}>${v === 'latest' ? 'latest (incumbent)' : v}</option>`).join('');
+    }
+
+    async function drawChart() {
+      const errs = await (await fetch(API + '/errors')).json();
+      const c = document.getElementById('chart');
+      const ctx = c.getContext('2d');
+      const W = c.width = c.offsetWidth, H = c.height;
+      ctx.clearRect(0, 0, W, H);
+      if (!errs.length) { ctx.fillStyle = '#6b7386'; ctx.font = '13px system-ui'; ctx.fillText('No matched pairs yet.', 10, 30); return; }
+      const pts = errs.map(e => ({ t: e.timestamp, p: e.predicted, a: e.actual }));
+      const all = pts.flatMap(p => [p.p, p.a]);
+      const lo = Math.min(...all), hi = Math.max(...all), span = Math.max(1, hi - lo);
+      const x = i => 40 + (W - 60) * i / Math.max(1, pts.length - 1);
+      const y = v => H - 25 - (H - 45) * (v - lo) / span;
+      ctx.strokeStyle = '#232a3a';
+      for (let g = 0; g <= 4; g++) { const gy = 20 + (H - 45) * g / 4;
+        ctx.beginPath(); ctx.moveTo(40, gy); ctx.lineTo(W - 20, gy); ctx.stroke(); }
+      const line = (key, color, dash) => { ctx.strokeStyle = color; ctx.lineWidth = 1.8; ctx.setLineDash(dash);
+        ctx.beginPath(); pts.forEach((p, i) => i ? ctx.lineTo(x(i), y(p[key])) : ctx.moveTo(x(i), y(p[key]))); ctx.stroke(); ctx.setLineDash([]); };
+      line('a', '#38bdf8', []); line('p', '#a78bfa', [5, 4]);
+      ctx.fillStyle = '#8b93a7'; ctx.font = '11px system-ui';
+      ctx.fillText('measured', 44, 14); ctx.fillStyle = '#38bdf8'; ctx.fillRect(32, 8, 8, 8);
+      ctx.fillStyle = '#8b93a7'; ctx.fillText('predicted', 110, 14); ctx.fillStyle = '#a78bfa'; ctx.fillRect(100, 8, 8, 8);
+      ctx.fillStyle = '#6b7386'; ctx.fillText(`min ${lo.toFixed(1)} / max ${hi.toFixed(1)} ug/m3`, W - 150, 14);
+    }
+
+    document.getElementById('strategy').addEventListener('change', refresh);
+    window.addEventListener('resize', drawChart);
+    refresh();
   </script>
 </body>
 </html>

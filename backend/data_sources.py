@@ -64,9 +64,12 @@ def synthetic_ground_reading(station_id: str, ts: datetime, model_pm25: float) -
     Adds realistic noise + a systematic bias so the self-improvement loop has
     something to learn. Replace with real AURN data in production.
     """
+    import hashlib
     import random
 
-    rng = random.Random(hash((station_id, ts.isoformat())) % (2**32))
+    # stable hash — Python's hash() is randomised per process
+    seed = int(hashlib.md5(f"{station_id}|{ts.isoformat()}".encode()).hexdigest()[:8], 16)
+    rng = random.Random(seed)
     # ground truth tends to be a bit higher than model (typical urban bias)
     noise = rng.gauss(0, 3.0)
     bias = 4.0 if station_id in ("marylebone", "bloomsbury") else 1.5

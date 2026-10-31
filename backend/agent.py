@@ -1,118 +1,235 @@
-"""Self-improvement loop: analyse errors -> propose change -> rewrite strategy -> evaluate."""
+"""Self-improvement loop: analyse errors -> propose change -> evaluate on holdout -> keep or reject.
+
+Integrity rules:
+- The analysis/tuning step only ever sees the tune split (earlier ~2/3 of matched pairs).
+- The holdout split (later ~1/3) is used exclusively to score incumbent vs candidate.
+- A candidate is kept only if its holdout MAE is lower than the incumbent's.
+- Rejected candidates are still saved as strategies (suffixed "-rejected") — the
+  ghost stays in the record.
+"""
 from __future__ import annotations
 
 import json
+import math
 import os
+import sys
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional, Tuple
 
 from openai import OpenAI
 
-from . import db, prediction
+import db
+import evaluation
+import prediction
 
 LLM_BASE_URL = os.getenv("LLM_BASE_URL", "http://localhost:11434/v1")
-LLM_MODEL = os.getenv("LLM_MODEL", "gemma2:2b")
+LLM_MODEL = os.getenv("LLM_MODEL", "nemotron-mini:latest")
 LLM_API_KEY = os.getenv("LLM_API_KEY", "ollama")
+
+# sane bounds for anything the LLM proposes
+PARAM_BOUNDS = {
+    "humidity_coef": (-0.5, 0.5),
+    "wind_coef": (-1.0, 1.0),
+    "precip_coef": (-5.0, 5.0),
+    "bias": (-10.0, 10.0),
+}
+HOLDOUT_FRACTION = 1 / 3
 
 
 def _client() -> OpenAI:
     return OpenAI(base_url=LLM_BASE_URL, api_key=LLM_API_KEY)
 
 
-def analyse_errors(errors: List[Dict[str, Any]]) -> Dict[str, str]:
-    if not errors:
-        return {
-            "what_went_wrong": "No errors recorded yet.",
-            "pattern_discovered": "n/a",
-            "change_made": "none",
-            "why_it_should_help": "n/a",
-        }
+def _clamp(params: Dict[str, Any]) -> Dict[str, float]:
+    out = {}
+    for k, (lo, hi) in PARAM_BOUNDS.items():
+        try:
+            v = float(params.get(k, 0.0))
+        except (TypeError, ValueError):
+            v = 0.0
+        out[k] = round(max(lo, min(hi, v)), 4)
+    return out
+
+
+def _parse_llm_json(text: str) -> Dict[str, Any]:
+    start = text.find("{")
+    end = text.rfind("}") + 1
+    if start < 0 or end <= start:
+        return {}
+    try:
+        return json.loads(text[start:end])
+    except json.JSONDecodeError:
+        return {}
+
+
+def analyse_errors(
+    tune_errors: List[Dict[str, Any]], current_params: Dict[str, Any]
+) -> Tuple[Dict[str, str], Optional[Dict[str, float]], str]:
+    """Ask the open-weight model to explain the errors AND propose new params.
+
+    Returns (analysis prose, llm_params or None, model_used).
+    """
+    if not tune_errors:
+        return (
+            {
+                "what_went_wrong": "No errors recorded yet.",
+                "pattern_discovered": "n/a",
+                "change_made": "none",
+                "why_it_should_help": "n/a",
+            },
+            None,
+            "none",
+        )
     by_station: Dict[str, List[float]] = {}
-    for e in errors:
+    for e in tune_errors:
         by_station.setdefault(e["station_id"], []).append(e["error"])
-    worst = max(by_station, key=lambda s: abs(sum(by_station[s]) / len(by_station[s]))) if by_station else None
-    avg_err = sum(e["error"] for e in errors) / len(errors)
-    fallback = {
-        "what_went_wrong": f"Mean bias {avg_err:+.2f} ug/m3 across {len(errors)} predictions.",
+    worst = max(
+        by_station, key=lambda s: abs(sum(by_station[s]) / len(by_station[s]))
+    )
+    avg_err = sum(e["error"] for e in tune_errors) / len(tune_errors)
+    analysis = {
+        "what_went_wrong": f"Mean bias {avg_err:+.2f} ug/m3 across {len(tune_errors)} tune-set predictions.",
         "pattern_discovered": f"Largest systematic bias at station '{worst}' (mean error "
-        f"{sum(by_station[worst])/len(by_station[worst]):+.2f}). "
-        "Model under-predicts in high-traffic / high-humidity conditions.",
-        "change_made": "Increase bias term and strengthen humidity correction (v2 params).",
-        "why_it_should_help": "Adding a positive bias and humidity term should reduce under-prediction in urban cores.",
+        f"{sum(by_station[worst]) / len(by_station[worst]):+.2f}).",
+        "change_made": "Adjusted bias/humidity terms (heuristic fallback).",
+        "why_it_should_help": "Bias correction counters systematic under/over-prediction.",
     }
     try:
         client = _client()
+        # compact stats + a few samples — small open-weight models handle short
+        # prompts with a concrete example far better than raw dumps
+        per_station = {
+            s: round(sum(v) / len(v), 2) for s, v in by_station.items()
+        }
         prompt = (
-            "You are an air-quality prediction agent. Given these prediction errors "
-            "(station, predicted, actual, error), identify the pattern and propose one "
-            "concrete change to a linear correction strategy (humidity_coef, wind_coef, "
-            "precip_coef, bias). Reply as JSON with keys: what_went_wrong, "
-            "pattern_discovered, change_made, why_it_should_help.\n\nErrors:\n"
-            + json.dumps(errors[:20])
+            "You are the reasoning core of a self-improving air-quality agent.\n"
+            "Strategy: pred = pm25_model + humidity_coef*(humidity-50) "
+            "+ wind_coef*(wind-5) + precip_coef*precipitation + bias\n"
+            f"Current params: {json.dumps(current_params)}\n"
+            f"Tune-set stats: mean_error={avg_err:+.2f} ug/m3 "
+            f"(negative = under-predicting), n={len(tune_errors)}, "
+            f"mean_error_by_station={json.dumps(per_station)}\n"
+            f"Sample errors (station, predicted, actual, error): "
+            f"{json.dumps(tune_errors[:8])}\n\n"
+            "Propose new params to reduce systematic error. Be conservative.\n"
+            "Reply ONLY with JSON like:\n"
+            '{"what_went_wrong": "...", "pattern_discovered": "...", '
+            '"change_made": "...", "why_it_should_help": "...", '
+            '"proposed_params": {"humidity_coef": -0.05, "wind_coef": -0.3, '
+            '"precip_coef": -0.5, "bias": 2.0}}'
         )
         resp = client.chat.completions.create(
-            model=LLM_MODEL, messages=[{"role": "user", "content": prompt}], temperature=0.2,
+            model=LLM_MODEL,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.2,
+            timeout=90,
         )
-        text = resp.choices[0].message.content or ""
-        start = text.find("{")
-        end = text.rfind("}") + 1
-        if start >= 0 and end > start:
-            parsed = json.loads(text[start:end])
-            for k in ("what_went_wrong", "pattern_discovered", "change_made", "why_it_should_help"):
-                if k in parsed and isinstance(parsed[k], str):
-                    fallback[k] = parsed[k]
-    except Exception:
-        pass
-    return fallback
+        raw = resp.choices[0].message.content or ""
+        parsed = _parse_llm_json(raw)
+        prose_ok = False
+        for k in ("what_went_wrong", "pattern_discovered", "change_made", "why_it_should_help"):
+            if isinstance(parsed.get(k), str):
+                analysis[k] = parsed[k]
+                prose_ok = True
+        proposed = parsed.get("proposed_params")
+        if isinstance(proposed, dict):
+            return analysis, _clamp(proposed), LLM_MODEL
+        return (
+            analysis,
+            None,
+            f"{LLM_MODEL} (analysis only; heuristic params)" if prose_ok
+            else "unusable output (heuristic fallback)",
+        )
+    except Exception as e:
+        print(f"[aeroloop] LLM call failed: {e!r}", file=sys.stderr)
+        return analysis, None, "unavailable (heuristic fallback)"
 
 
-def propose_new_params(current: Dict[str, Any], errors: List[Dict[str, Any]]) -> Dict[str, Any]:
+def heuristic_params(current: Dict[str, Any], tune_errors: List[Dict[str, Any]]) -> Dict[str, float]:
+    """Deterministic fallback when the LLM can't be reached or returns junk."""
+    avg_err = sum(e["error"] for e in tune_errors) / len(tune_errors)
     new = dict(current)
-    avg_err = sum(e["error"] for e in errors) / len(errors) if errors else 0.0
-    new["bias"] = round(current.get("bias", 2.0) - avg_err * 0.5, 3)
-    new["humidity_coef"] = round(current.get("humidity_coef", -0.05) - 0.01, 3)
-    return new
+    new["bias"] = current.get("bias", 0.0) - avg_err * 0.5
+    return _clamp(new)
 
 
-import math
+def _split(matched: List[Dict[str, Any]]) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+    """Chronological split: tune on the past, hold out the future."""
+    ordered = sorted(matched, key=lambda m: m["timestamp"])
+    cut = max(1, int(len(ordered) * (1 - HOLDOUT_FRACTION)))
+    if len(ordered) - cut < 2:  # need at least a couple holdout points
+        cut = max(0, len(ordered) - 2)
+    return ordered[:cut], ordered[cut:]
 
 
-def run_self_improvement(
-    station_id: str,
-    benchmark_predictions_v1: List[Dict[str, Any]],
-    benchmark_readings: List[Dict[str, Any]],
-) -> Dict[str, Any]:
-    from . import evaluation
-    from .models import Strategy
+def _errors_for(strategy_params: Dict[str, Any], pairs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    errs = []
+    for m in pairs:
+        pred = prediction.predict("v2-improved", m["inputs"], strategy_params)
+        errs.append({"station_id": m["station_id"], "timestamp": m["timestamp"],
+                     "predicted": pred, "actual": m["actual"], "error": pred - m["actual"]})
+    return errs
 
-    before = evaluation.evaluate(benchmark_predictions_v1, benchmark_readings)
 
-    errors = db.get_errors()
-    current_params = prediction.STRATEGY_REGISTRY["v2-improved"]["params"]
-    new_params = propose_new_params(current_params, errors)
-    analysis = analyse_errors(errors)
+def _score(params: Dict[str, Any], pairs: List[Dict[str, Any]]) -> Dict[str, Any]:
+    preds = [
+        {"station_id": m["station_id"], "timestamp": m["timestamp"],
+         "predicted_pm25": prediction.predict("v2-improved", m["inputs"], params)}
+        for m in pairs
+    ]
+    readings = [
+        {"station_id": m["station_id"], "timestamp": m["timestamp"], "measured_pm25": m["actual"]}
+        for m in pairs
+    ]
+    return evaluation.evaluate(preds, readings)
 
-    v2_preds = []
-    for p in benchmark_predictions_v1:
-        feats = p.get("inputs", {}) or {}
-        pred = prediction.predict("v2-improved", feats, new_params)
-        v2_preds.append(
-            {"station_id": p["station_id"], "timestamp": p["timestamp"],
-             "predicted_pm25": pred, "inputs": feats}
-        )
 
-    after = evaluation.evaluate(v2_preds, benchmark_readings)
-    improved = (not math.isnan(after["mae"])) and after["mae"] < before["mae"])
+def _ver_num(version: str) -> int:
+    head = version.split("-")[0].lstrip("v")
+    return int(head) if head.isdigit() else -1
 
-    new_version = "v2-improved" if improved else "v2-rejected"
-    s = Strategy(
-        version=new_version,
-        description=analysis["change_made"],
-        params=new_params if improved else current_params,
+
+def _next_version(accepted: bool) -> str:
+    v = f"v{max((_ver_num(s['version']) for s in db.get_strategies()), default=2) + 1}"
+    return v if accepted else f"{v}-rejected"
+
+
+def _incumbent() -> Tuple[str, Dict[str, Any]]:
+    """Highest-numbered accepted parametric strategy; falls back to v2 defaults."""
+    strategies = [
+        s for s in db.get_strategies()
+        if not s["version"].startswith("v1") and not s["version"].endswith("-rejected")
+    ]
+    if not strategies:
+        return "v2-improved", dict(prediction.STRATEGY_REGISTRY["v2-improved"]["params"])
+    latest = max(strategies, key=lambda s: _ver_num(s["version"]))
+    return latest["version"], json.loads(latest["params"])
+
+
+def run_self_improvement(matched: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """matched: [{station_id, timestamp, inputs, actual}] — only pairs where
+    ground truth was retrieved *after* the prediction was stored."""
+    from models import Strategy
+
+    tune, holdout = _split(matched)
+    incumbent_version, incumbent_params = _incumbent()
+
+    tune_errors = _errors_for(incumbent_params, tune)
+    analysis, llm_params, model_used = analyse_errors(tune_errors, incumbent_params)
+    candidate_params = llm_params or heuristic_params(incumbent_params, tune_errors)
+
+    before = _score(incumbent_params, holdout)
+    after = _score(candidate_params, holdout)
+    improved = (not math.isnan(after["mae"])) and after["mae"] < before["mae"]
+
+    db.save_strategy(Strategy(
+        version=_next_version(accepted=improved),
+        description=analysis["change_made"]
+        + f" (proposed by {model_used}; {'kept' if improved else 'REJECTED on holdout'})",
+        params=candidate_params,
         created_at=datetime.utcnow(),
-        parent_version="v1-baseline",
-    )
-    db.save_strategy(s)
+        parent_version=incumbent_version,
+    ))
 
     return {
         "what_went_wrong": analysis["what_went_wrong"],
@@ -120,7 +237,13 @@ def run_self_improvement(
         "change_made": analysis["change_made"],
         "why_it_should_help": analysis["why_it_should_help"],
         "improved": improved,
+        "model_used": model_used,
+        "params_source": "llm" if llm_params else "heuristic",
+        "incumbent_version": incumbent_version,
+        "tune_n": len(tune),
+        "holdout_n": len(holdout),
         "before": before,
         "after": after,
-        "new_params": new_params if improved else current_params,
+        "params": candidate_params if improved else incumbent_params,
+        "proposed_params": candidate_params,
     }

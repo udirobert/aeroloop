@@ -7,7 +7,10 @@ import sqlite3
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-DB_PATH = os.getenv("DATABASE_PATH", "./data/aeroloop.db")
+DB_PATH = os.getenv(
+    "DATABASE_PATH",
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "aeroloop.db"),
+)
 
 
 def _conn() -> sqlite3.Connection:
