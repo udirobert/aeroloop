@@ -51,6 +51,7 @@ def _resolve_strategy(version: str) -> Tuple[str, Dict[str, Any]]:
         return "v1", {}
     if version == "latest":
         return "v2", agent._incumbent()[1]
+    # note: "latest" = incumbent; v1/v2 names are reserved seeds
     if version == "v2-improved":
         return "v2", dict(prediction.STRATEGY_REGISTRY["v2-improved"]["params"])
     stored = next((s for s in db.get_strategies() if s["version"] == version), None)

@@ -174,7 +174,7 @@
           <td>${s.description}</td></tr>`;
       }).join('');
       const sel = document.getElementById('strategy');
-      const opts = ['latest', ...rows.filter(s => !s.version.endsWith('-rejected')).map(s => s.version)];
+      const opts = ['latest', ...rows.filter(s => !s.version.endsWith('-rejected') && !s.params.includes('tabpfn')).map(s => s.version)];
       const cur = sel.value;
       sel.innerHTML = opts.map(v => `<option value="${v}" ${v === cur ? 'selected' : ''}>${v === 'latest' ? 'latest (incumbent)' : v}</option>`).join('');
     }

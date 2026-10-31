@@ -226,12 +226,16 @@ def _score_tabpfn(tune: List[Dict[str, Any]], holdout: List[Dict[str, Any]]) -> 
     if not token or len(tune) < 8 or not holdout:
         return None
     try:
+        import numpy as np
         import tabpfn_client
 
         tabpfn_client.set_access_token(token)
         reg = tabpfn_client.TabPFNRegressor()
-        reg.fit([_vec(m["inputs"]) for m in tune], [m["actual"] for m in tune])
-        preds = reg.predict([_vec(m["inputs"]) for m in holdout])
+        reg.fit(
+            np.array([_vec(m["inputs"]) for m in tune]),
+            np.array([m["actual"] for m in tune]),
+        )
+        preds = reg.predict(np.array([_vec(m["inputs"]) for m in holdout]))
         paired = [
             {"station_id": m["station_id"], "timestamp": m["timestamp"],
              "predicted_pm25": float(p)}
@@ -257,7 +261,7 @@ def _incumbent() -> Tuple[str, Dict[str, Any]]:
     TabPFN-kind rows are recorded for audit but don't serve live predictions yet."""
     strategies = []
     for s in db.get_strategies():
-        if s["version"].startswith("v1") or s["version"].endswith("-rejected"):
+        if _ver_num(s["version"]) < 2 or s["version"].endswith("-rejected"):
             continue
         try:
             params = json.loads(s["params"])

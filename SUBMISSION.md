@@ -58,20 +58,25 @@ fallbacks.
 One demo session: a simulated London day (4 stations × 30 hourly ticks, 120
 matched prediction/reading pairs), real reasoning from real open-weight models.
 
-| Version | Proposed by | Change | Holdout MAE | Verdict |
-|---------|-------------|--------|-------------|---------|
-| v3 | `nemotron-mini` (local Ollama) | "increase humidity_coef by 0.05" — it was already −0.05; a no-op | no gain | **rejected** → ghost |
-| v4, v5 | heuristic fallback (model output unusable, reported honestly) | bias corrections | 4.12 → 3.15 → 3.17 | kept |
-| v6–v8 | `nemotron-mini` | sensible prose, params that made things worse | — | **rejected** → ghosts |
-| v9 | `gemma-3-27b-it` | fluent diagnosis of under-prediction… then proposed *reducing* bias — wrong direction | 3.17 → 4.58 | **rejected** → ghost |
-| v10 | `gemma-3-27b-it` | raise bias 4.36 → 4.6, soften humidity/wind corrections | 3.17 → **2.84** | **kept** |
+| Version | Proposed by | What it did | Holdout MAE | Verdict |
+|---------|-------------|-------------|-------------|---------|
+| v3 | `gemma-3-27b-it` | bias 2.0 → 3.0 ("we're under-predicting") | 3.94 → 3.37 | kept |
+| v4-tabpfn | **TabPFN** (Prior Labs) | foundation model trained on the tune split only | **3.08** | recorded — beat the formula outright |
+| v5 | `gemma-3-27b-it` | bias 3.0 → 4.0, humidity → −0.02 | 3.37 → **3.06** | kept — formula edges past TabPFN |
+| v6 | `gemma-3-27b-it` | bias → 4.2, wind → −0.2, precip → −0.55 | 3.06 → **2.99** | kept |
+| v7-rejected | `gemma-3-27b-it` | bias → 4.5 | 3.01 | **rejected** — diminishing returns 👻 |
 
-The honest bits are the fun bits. The first proposal ever was a no-op dressed up
-as an improvement — the holdout gate caught it. Later, a 27B model wrote a
-*beautifully reasoned* analysis of systematic under-prediction and then proposed
-moving the bias the wrong way; the gate caught that too. The LLM is the
-imagination; the holdout is the judge; the graveyard of ghosts (v3–v9) is the
-audit trail.
+Net result: holdout MAE **3.94 → 2.99 (−24%)**, driven entirely by Gemma's own
+reading of its error history. And the subplot is the best part: Prior Labs'
+TabPFN foundation model beat the hand-tuned formula outright on the first
+round, Gemma's incremental tuning then edged back ahead on round two — a
+foundation model and a 4-coefficient formula trading blows on the same
+unseen data, decided by the same gate.
+
+The honest bits are the fun bits: when Gemma proposed pushing bias to 4.5 the
+holdout said no — the strategy had hit diminishing returns, and v7 went into
+the record as a ghost instead of a silent overwrite. The LLM is the
+imagination; the holdout is the judge; the graveyard is the audit trail.
 
 [DASHBOARD SCREENSHOT: docs/screenshot-full.png]
 
@@ -93,9 +98,11 @@ audit trail.
 - **Open APIs all the way down:** Open-Meteo (no key) for CAMS PM2.5 + weather,
   an OpenAI-compatible endpoint for reasoning, plain JSON on disk for memory.
 - **Challengers welcome:** the holdout gate doesn't care what a candidate is.
-  Plug in **TabPFN** (Prior Labs' open-weight tabular foundation model) and it
-  gets scored on the same unseen data as the linear formula — foundation model
-  vs. a 4-coefficient formula, judged by the same rules.
+  **TabPFN** (Prior Labs' open-weight tabular foundation model) is wired in as
+  a standing challenger — trained on the tune split, scored on the same unseen
+  holdout. It won its first round outright (v4-tabpfn is in the strategy
+  table). Foundation model vs. a 4-coefficient formula, judged by the same
+  rules.
 
 ## Scientific integrity, enforced in code
 
