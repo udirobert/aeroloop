@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AeroLoop — The Ghost Over London</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; }
+    html, body { height: 100%; overflow: hidden; background: #02030a; }
+    body { font-family: "Avenir Next", "Segoe UI", system-ui, sans-serif; color: #cfd6ee; }
+    #scene { position: fixed; inset: 0; }
+    #hud { position: fixed; inset: 0; pointer-events: none; display: flex;
+           flex-direction: column; justify-content: space-between; }
+    header { padding: 22px 28px 0; }
+    h1 { font-size: 15px; font-weight: 600; letter-spacing: .28em;
+         text-transform: uppercase; color: #e7e3ff;
+         text-shadow: 0 0 18px rgba(167,139,250,.55); }
+    .sub { margin-top: 5px; font-size: 11.5px; letter-spacing: .06em; color: #7d87ab; }
+    #sources { padding: 0 28px; font-size: 10.5px; color: #5d6684; letter-spacing: .04em; }
+    #sources span { margin-right: 18px; }
+    #sources b { color: #9aa3c8; font-weight: 500; }
+    .bottom { display: flex; align-items: flex-end; justify-content: space-between;
+              padding: 0 28px 22px; }
+    #caption { position: absolute; left: 50%; bottom: 96px; transform: translateX(-50%);
+               max-width: 640px; text-align: center; font-size: 17px; line-height: 1.5;
+               color: #ece9ff; letter-spacing: .02em; opacity: 0; transition: opacity .8s;
+               text-shadow: 0 2px 24px #000, 0 0 40px rgba(124,140,255,.25); }
+    #controls { pointer-events: auto; display: flex; gap: 8px; }
+    button { background: rgba(20,24,48,.7); color: #b9c2e8; border: 1px solid #2e3557;
+             padding: 7px 13px; border-radius: 7px; cursor: pointer; font-size: 11.5px;
+             letter-spacing: .06em; backdrop-filter: blur(6px); }
+    button:hover { background: rgba(38,44,84,.8); color: #e7e3ff; }
+    button.active { border-color: #7c5cf6; color: #d9ccff; }
+    #legend { font-size: 10.5px; color: #5d6684; line-height: 1.9; letter-spacing: .04em; }
+    #legend i { display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+                margin-right: 7px; }
+    a.back { color: #5d6684; font-size: 10.5px; text-decoration: none; letter-spacing: .04em; }
+    a.back:hover { color: #b9c2e8; }
+    #verdict { position: absolute; left: 50%; top: 42%; transform: translate(-50%,-50%) rotate(-4deg);
+               font-size: 44px; font-weight: 800; letter-spacing: .3em; opacity: 0;
+               color: #a5f3c8; text-shadow: 0 0 42px currentColor; pointer-events: none;
+               transition: opacity .5s; }
+    #verdict.rejected { color: #c4b5fd; }
+    #loading { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+               background: #04050d; z-index: 10; transition: opacity 1.2s; }
+    #loading div { font-size: 12px; letter-spacing: .3em; text-transform: uppercase;
+                   color: #7d87ab; animation: pulse 1.6s infinite; }
+    @keyframes pulse { 50% { opacity: .35; } }
+  </style>
+</head>
+<body>
+  <div id="loading"><div>summoning the ghost…</div></div>
+  <div id="scene"></div>
+  <div id="hud">
+    <header>
+      <h1>The Ghost Over London</h1>
+      <div class="sub">AeroLoop — a self-improving PM2.5 agent. The city is memory; the haze is the ghost.</div>
+    </header>
+    <div class="bottom">
+      <div>
+        <div id="legend">
+          <i style="background:#8b7cff"></i> buildings — OSM footprints, spectral trace<br>
+          <i style="background:#b455f0"></i> haze — modelled PM2.5 (CAMS)<br>
+          <i style="background:#67e8f9"></i> beacons — monitoring stations<br>
+          <i style="background:#e9d5ff"></i> wisps — the agent's errors
+        </div>
+        <div id="sources"></div>
+      </div>
+      <div id="controls">
+        <button id="btnFilm">▶ play the film</button>
+        <button id="btnLabels" class="active">labels</button>
+        <button id="btnDemo">+ memories</button>
+        <a class="back" href="/" style="align-self:center">data view →</a>
+      </div>
+    </div>
+  </div>
+  <div id="caption"></div>
+  <div id="verdict"></div>
+  <script type="importmap">
+    { "imports": { "three": "/static/vendor/three.module.js" } }
+  </script>
+  <script type="module" src="/static/scene.js"></script>
+</body>
+</html>

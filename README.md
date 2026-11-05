@@ -55,7 +55,10 @@ cp ../.env.example .env
 uvicorn main:app --reload --port 8000
 ```
 
-Then open `http://localhost:8000` (serves the dashboard) or `http://localhost:8000/docs`.
+Then open `http://localhost:8000` (serves the dashboard), `http://localhost:8000/scene`
+(**The Ghost Over London** — a spectral 3D render of inner London built from real
+OSM geometry, with modelled PM2.5 as wind-advected haze and the agent's errors
+rising off the monitors as wisps; press "play the film"), or `http://localhost:8000/docs`.
 
 **One-click demo:** `POST /demo-day` simulates 24h of predictions + delayed ground
 truth across all 4 stations, fully offline. Then `POST /self-improve` runs the
@@ -73,7 +76,10 @@ backend/
 ├── evaluation.py    MAE / RMSE / bias over matched prediction/reading pairs
 └── agent.py         Self-improvement loop: tune-split analysis → holdout gate → keep/reject
 frontend/
-└── index.html       Dashboard: predicted-vs-measured chart, agent report, strategy memory
+├── index.html       Dashboard: predicted-vs-measured chart, agent report, strategy memory
+├── scene.html/.js   "The Ghost Over London" — spectral 3D city (vendored three.js)
+├── london-city.json Baked OSM geometry (26k buildings, 10k roads) — see tools/bake_city.py
+└── vendor/          three.js + postprocessing, vendored — no CDN, works offline
 ```
 
 ## Scientific integrity

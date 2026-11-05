@@ -123,16 +123,23 @@ async def predict(req: PredictRequest):
 
 
 @app.post("/ground-truth")
-def ground_truth(station_id: str, prediction_id: int):
+async def ground_truth(station_id: str, prediction_id: int):
     preds = db.get_predictions(station_id)
     target = next((p for p in preds if p["id"] == prediction_id), None)
     if not target:
         raise HTTPException(404, "prediction not found")
     ts = datetime.fromisoformat(target["timestamp"])
-    model_pm25 = (json.loads(target["inputs"]).get("pm25_model") if target["inputs"] else None) or 10.0
-    actual = data_sources.synthetic_ground_reading(station_id, ts, model_pm25)
+    # Real truth first: LAQN hourly PM2.5 where the site measures it and the
+    # reading is old enough to be published. Labelled synthetic fallback.
+    actual = await data_sources.laqn_reading_for(station_id, ts)
+    if actual is not None:
+        source = "LAQN (real monitor, ratified)"
+    else:
+        model_pm25 = (json.loads(target["inputs"]).get("pm25_model") if target["inputs"] else None) or 10.0
+        actual = data_sources.synthetic_ground_reading(station_id, ts, model_pm25)
+        source = "synthetic (offline stand-in)"
     reading = GroundReading(station_id=station_id, timestamp=ts,
-                            measured_pm25=actual, source="synthetic (offline stand-in)")
+                            measured_pm25=actual, source=source)
     rid = db.save_reading(reading)
     err = target["predicted_pm25"] - actual
     db.save_error(ErrorRecord(
@@ -140,7 +147,7 @@ def ground_truth(station_id: str, prediction_id: int):
         predicted=target["predicted_pm25"], actual=actual, error=err,
         abs_error=abs(err), squared_error=err * err,
     ))
-    return {"reading_id": rid, "measured_pm25": actual, "error": err}
+    return {"reading_id": rid, "measured_pm25": actual, "error": err, "source": source}
 
 
 @app.get("/evaluate")
@@ -221,6 +228,63 @@ def strategies():
 @app.get("/errors")
 def errors():
     return db.get_errors()
+
+
+@app.get("/wind-field")
+async def wind_field():
+    """u/v wind over a London grid, grib2json-style records (leaflet-velocity format)."""
+    return await data_sources.get_wind_field()
+
+
+@app.get("/aq-field")
+async def aq_field():
+    """Modelled PM2.5 + NO2 over a London grid (CAMS via Open-Meteo)."""
+    return await data_sources.get_aq_field()
+
+
+@app.get("/scene-state")
+def scene_state():
+    """One hydration payload for the Ghost Over London scene."""
+    latest_err: Dict[str, Any] = {}
+    for e in db.get_errors():
+        s = e["station_id"]
+        if s not in latest_err or e["timestamp"] > latest_err[s]["timestamp"]:
+            latest_err[s] = e
+    stations = []
+    for sid, (lat, lon) in data_sources.LONDON_STATIONS.items():
+        e = latest_err.get(sid)
+        stations.append({
+            "id": sid, "lat": lat, "lon": lon,
+            "latest_pred": e["predicted"] if e else None,
+            "latest_actual": e["actual"] if e else None,
+            "error": e["error"] if e else None,
+            "ts": e["timestamp"] if e else None,
+        })
+    strats = db.get_strategies()
+    return {
+        "stations": stations,
+        "strategies": [
+            {"version": s["version"], "parent": s["parent_version"],
+             "kept": not s["version"].endswith("-rejected"),
+             "description": s["description"], "created_at": s["created_at"]}
+            for s in strats
+        ],
+        "chapters": [
+            {"version": s["version"], "verdict": "rejected" if s["version"].endswith("-rejected") else "kept",
+             "t": s["created_at"]}
+            for s in strats if not s["version"].startswith("v1") and not s["version"].startswith("v2")
+        ],
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+
+@app.get("/scene", response_class=HTMLResponse)
+def scene():
+    html_path = os.path.join(FRONTEND_DIR, "scene.html")
+    if os.path.exists(html_path):
+        with open(html_path) as f:
+            return f.read()
+    return HTMLResponse("<h1>scene not found</h1>", status_code=404)
 
 
 @app.get("/", response_class=HTMLResponse)

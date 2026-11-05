@@ -3,9 +3,20 @@
 ## Modules
 
 - **data_sources.py** — Open-Meteo Air Quality (CAMS PM2.5/NO2) + weather. Ground truth:
-  DEFRA AURN (not wired yet; a deterministic synthetic stand-in keeps the demo loop
-  runnable fully offline — seeded by md5(station, timestamp), so "measurements" are
-  reproducible across restarts).
+  real LAQN (LondonAir) hourly PM2.5 where a site measures it — currently
+  **north_kensington (KC1)** only — resolved when the prediction's hour is old
+  enough to be ratified (~5-day publication lag, which suits the delayed-truth
+  mechanic). Otherwise a deterministic synthetic stand-in keeps the demo loop
+  runnable fully offline (md5-seeded, reproducible). The reading's `source`
+  says which path ran. Also gridded field fetchers for the scene:
+  `fetch_wind_field()` / `fetch_aq_field()` — one multi-coordinate Open-Meteo
+  call each, mem-cache → `data/cache/` → labelled synthetic fallback.
+- **frontend/scene.html + scene.js** — "The Ghost Over London": spectral 3D
+  scene (vendored three.js, no build step, no CDN). Real OSM buildings/roads
+  as wireframe traces, modelled PM2.5 as wind-advected haze, station beacons,
+  error wisps, scripted film mode with captions + real-verdict stamp.
+- **tools/bake_city.py** — one-off Overpass bake → `frontend/london-city.json`
+  (26k buildings, 10k roads, ~7MB; heights from OSM tags or seeded estimate).
 - **prediction.py** — `v1-baseline` (model + humidity correction) and `v2-improved`
   (model + humidity/wind/precip + bias). Params are versioned and agent-editable.
 - **evaluation.py** — MAE, RMSE, bias over matched prediction/reading pairs; breakdown by station.
@@ -19,8 +30,9 @@
   5. Keep the candidate only if holdout MAE improves; otherwise save it anyway as
      `<v>-rejected` — rejected ideas stay in the record (the ghosts).
 - **db.py** — SQLite (predictions, ground_readings, errors, strategies).
-- **main.py** — FastAPI: /predict, /ground-truth, /evaluate, /self-improve, /demo-day,
-  /strategies, /errors, dashboard.
+- **main.py** — FastAPI: /predict, /ground-truth (LAQN-first), /evaluate,
+  /self-improve, /demo-day, /strategies, /errors, /wind-field, /aq-field,
+  /scene-state, dashboard (/), scene (/scene).
 
 ## Data flow
 
