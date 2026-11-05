@@ -128,11 +128,14 @@ third. Serious entries with real run data:
 
 Standing: mid-pack on raw score, differentiated by (a) two independent arcs
 on two models incl. open-weights via the sponsor gateway, (b) honest
-regressions + a kept transport-error run, (c) evals built from a real running
-system's recorded data rather than a toy task set. Weaknesses: smallest
-serious task set (8 vs ghost's 35 — tasks are frozen after run 1, can't grow
-mid-history) and a lower peak vs the 100s. People's vote (Fri 6–Sun 15 Nov,
-via ASI:One) is the remaining lever where outside users count.
+regressions + kept transport-error and rejected-edit runs, (c) evals built
+from a real running system's recorded data rather than a toy task set, (d)
+verified `skill_mode: "git"` + sandbox end-to-end — a starter TODO(verify)
+item nobody else ships. The 8-task-set weakness is answered by `evals/hard/`
+(24 tasks, generalization experiment: 55.1 → 63.65 → 61.77 — the playbook's
+small-suite correction honestly didn't transfer, and the agent diagnosed and
+fixed it). People's vote (Fri 6–Sun 15 Nov, via ASI:One) is the remaining
+lever where outside users count.
 
 Still open (user-side):
 1. Luma registration → pact → Duck/ASI:One activation → pick TrueForge

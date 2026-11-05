@@ -133,6 +133,15 @@ commit through the local sandbox — the starter's `TODO(verify)` path,
 verified end-to-end (see `runs/run-09/session.json`: `sandbox.created` and
 skill-read tool calls).
 
+**Generalization check — `evals/hard/` (runs 11–13):** the learned playbook
+was then frozen against a 24-task suite it never saw (6/station, 4 holdout).
+Its ×1.20 rule scored **55.1 → improved to 63.65** after one self-edit that
+replaced the single multiplier with per-station uplifts plus an NO2 traffic
+term — the honest finding being that the small-suite correction *didn't*
+generalize, and the agent diagnosed that itself. Run 13 (61.77, one unparsed
+reply) and a rejected self-edit (the overfit guard caught it quoting a task
+value) are kept in the record too.
+
 ### Run it
 
 ```bash
