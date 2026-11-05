@@ -11,4 +11,8 @@ assimilated into it, so it is the best estimate available.
 **Rule: estimate = pm25_model + 2.0**
 
 This correction applies to all stations and times.
+
+**Rule: if station is marylebone, estimate = pm25_model + 4.6**
+
+This correction applies only to Marylebone.
 -->
