@@ -121,7 +121,11 @@ a PM2.5-forecasting agent whose estimation strategy lives in
 Two independent learning arcs are in the record: runs 1–4 on
 `huggingface/gemma-3-27b-it`, runs 5–8 on `truefoundry/kimi-k27-code`
 (open weights served through the organisers' managed AI Gateway, on the
-provided credits).
+provided credits). Runs 9–10 switch `skill_mode` to `"git"`: the agent reads
+its skill as a **real TrueForge skill** cloned from this repo at the pinned
+commit through the local sandbox — the starter's `TODO(verify)` path,
+verified end-to-end (see `runs/run-09/session.json`: `sandbox.created` and
+skill-read tool calls).
 
 ### Run it
 
