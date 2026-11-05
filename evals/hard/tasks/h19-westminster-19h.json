@@ -1,0 +1,16 @@
+{
+  "id": "h19-westminster-19h",
+  "title": "Westminster, evening",
+  "holdout": false,
+  "station_id": "westminster",
+  "context": "London Westminster monitor, evening.",
+  "features": {
+    "pm25_model": 7.7,
+    "no2_model": 15.6,
+    "humidity": 60.0,
+    "wind_speed": 8.1,
+    "temperature": 16.6,
+    "precipitation": 0.0
+  },
+  "expected_pm25": 11.6
+}

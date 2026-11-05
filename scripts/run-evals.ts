@@ -21,10 +21,12 @@ import {
   isClean,
   loadTasks,
   readAgent,
+  ROOT,
   runDir,
   runTurn,
   sessionStats,
   SUMMARY_CSV,
+  tasksDir,
   syncAgent,
   taskPrompt,
   writeJson,
@@ -76,7 +78,7 @@ const total = scoreRun(results);
 const exp = await exportSession(tf, session.id);
 const stats = sessionStats(exp);
 writeJson(join(dir, "results.json"), results);
-writeJson(join(dir, "score.json"), { run, session_id: session.id, agent_commit: agentCommit, ...total, ...stats, duration_s: durationS });
+writeJson(join(dir, "score.json"), { run, session_id: session.id, agent_commit: agentCommit, suite: tasksDir().replace(`${ROOT}/`, ""), ...total, ...stats, duration_s: durationS });
 writeJson(join(dir, "session.json"), exp);
 
 const date = new Date().toISOString().replace(/\.\d+Z$/, "Z");

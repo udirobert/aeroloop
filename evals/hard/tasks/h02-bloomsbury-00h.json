@@ -1,0 +1,16 @@
+{
+  "id": "h02-bloomsbury-00h",
+  "title": "Bloomsbury, overnight",
+  "holdout": false,
+  "station_id": "bloomsbury",
+  "context": "London Bloomsbury monitor, overnight.",
+  "features": {
+    "pm25_model": 21.9,
+    "no2_model": 15.4,
+    "humidity": 91.1,
+    "wind_speed": 13.5,
+    "temperature": 17.5,
+    "precipitation": 0.0
+  },
+  "expected_pm25": 18.0
+}

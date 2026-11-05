@@ -11,6 +11,10 @@ import { TrueForge, TrueForgeApi } from "@truefoundry/trueforge-sdk";
 
 export const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 export const AGENT_DIR = join(ROOT, "agent");
+/** Eval suite dir: --tasks-dir <path> or TASKS_DIR env, default evals/tasks. The default suite is frozen after run 1; parallel suites (e.g. evals/hard/tasks) are separate experiments. */
+export function tasksDir(): string {
+  return resolve(ROOT, process.argv.includes("--tasks-dir") ? process.argv[process.argv.indexOf("--tasks-dir") + 1] : (process.env.TASKS_DIR ?? "evals/tasks"));
+}
 export const TASKS_DIR = join(ROOT, "evals", "tasks");
 export const RUNS_DIR = join(ROOT, "runs");
 export const SUMMARY_CSV = join(RUNS_DIR, "summary.csv");
@@ -194,10 +198,10 @@ export interface Task {
 }
 
 export function loadTasks(): Task[] {
-  return readdirSync(TASKS_DIR)
+  return readdirSync(tasksDir())
     .filter((f) => f.endsWith(".json"))
     .sort()
-    .map((f) => JSON.parse(readFileSync(join(TASKS_DIR, f), "utf8")) as Task);
+    .map((f) => JSON.parse(readFileSync(join(tasksDir(), f), "utf8")) as Task);
 }
 
 const FEATURE_LABELS: Record<string, string> = {

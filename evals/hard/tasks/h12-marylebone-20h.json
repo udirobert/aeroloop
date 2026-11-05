@@ -1,0 +1,16 @@
+{
+  "id": "h12-marylebone-20h",
+  "title": "Marylebone, evening",
+  "holdout": true,
+  "station_id": "marylebone",
+  "context": "London Marylebone monitor, evening.",
+  "features": {
+    "pm25_model": 18.0,
+    "no2_model": 59.6,
+    "humidity": 64.7,
+    "wind_speed": 2.1,
+    "temperature": 12.9,
+    "precipitation": 0.0
+  },
+  "expected_pm25": 17.7
+}

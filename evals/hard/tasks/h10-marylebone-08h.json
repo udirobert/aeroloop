@@ -1,0 +1,16 @@
+{
+  "id": "h10-marylebone-08h",
+  "title": "Marylebone, morning",
+  "holdout": false,
+  "station_id": "marylebone",
+  "context": "London Marylebone monitor, morning.",
+  "features": {
+    "pm25_model": 28.8,
+    "no2_model": 13.0,
+    "humidity": 82.5,
+    "wind_speed": 11.4,
+    "temperature": 7.5,
+    "precipitation": 0.0
+  },
+  "expected_pm25": 29.9
+}

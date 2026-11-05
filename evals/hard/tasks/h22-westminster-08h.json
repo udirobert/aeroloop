@@ -1,0 +1,16 @@
+{
+  "id": "h22-westminster-08h",
+  "title": "Westminster, morning",
+  "holdout": false,
+  "station_id": "westminster",
+  "context": "London Westminster monitor, morning.",
+  "features": {
+    "pm25_model": 6.9,
+    "no2_model": 13.2,
+    "humidity": 63.4,
+    "wind_speed": 14.1,
+    "temperature": 9.9,
+    "precipitation": 0.0
+  },
+  "expected_pm25": 11.3
+}

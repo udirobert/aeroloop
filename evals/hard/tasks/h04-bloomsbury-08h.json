@@ -1,0 +1,16 @@
+{
+  "id": "h04-bloomsbury-08h",
+  "title": "Bloomsbury, morning",
+  "holdout": false,
+  "station_id": "bloomsbury",
+  "context": "London Bloomsbury monitor, morning.",
+  "features": {
+    "pm25_model": 23.7,
+    "no2_model": 15.9,
+    "humidity": 50.6,
+    "wind_speed": 8.7,
+    "temperature": 13.7,
+    "precipitation": 1.21
+  },
+  "expected_pm25": 23.9
+}

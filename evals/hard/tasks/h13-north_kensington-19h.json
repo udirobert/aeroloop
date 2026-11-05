@@ -1,0 +1,16 @@
+{
+  "id": "h13-north_kensington-19h",
+  "title": "North Kensington, evening",
+  "holdout": false,
+  "station_id": "north_kensington",
+  "context": "London North Kensington monitor, evening.",
+  "features": {
+    "pm25_model": 16.8,
+    "no2_model": 27.4,
+    "humidity": 62.6,
+    "wind_speed": 5.3,
+    "temperature": 14.9,
+    "precipitation": 0.0
+  },
+  "expected_pm25": 20.9
+}

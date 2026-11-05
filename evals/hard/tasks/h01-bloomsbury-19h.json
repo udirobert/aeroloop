@@ -1,0 +1,16 @@
+{
+  "id": "h01-bloomsbury-19h",
+  "title": "Bloomsbury, evening",
+  "holdout": false,
+  "station_id": "bloomsbury",
+  "context": "London Bloomsbury monitor, evening.",
+  "features": {
+    "pm25_model": 25.0,
+    "no2_model": 17.0,
+    "humidity": 80.9,
+    "wind_speed": 14.7,
+    "temperature": 12.0,
+    "precipitation": 0.86
+  },
+  "expected_pm25": 24.5
+}

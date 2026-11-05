@@ -1,0 +1,16 @@
+{
+  "id": "h21-westminster-04h",
+  "title": "Westminster, overnight",
+  "holdout": false,
+  "station_id": "westminster",
+  "context": "London Westminster monitor, overnight.",
+  "features": {
+    "pm25_model": 7.2,
+    "no2_model": 37.0,
+    "humidity": 55.8,
+    "wind_speed": 7.0,
+    "temperature": 10.6,
+    "precipitation": 2.06
+  },
+  "expected_pm25": 11.2
+}
