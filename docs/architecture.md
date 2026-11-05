@@ -62,3 +62,21 @@ ground truth arrives  -->  save reading  -->  matched pair
   (audit-only for now — live prediction still uses the parametric incumbent).
 - No torch/sklearn locally — the linear strategies are stdlib math and TabPFN
   inference is hosted, so the backend installs in seconds and runs on anything.
+
+## TrueForge harness (Stranger Builds)
+
+Alongside the backend, a second, self-contained self-improvement loop for the
+Stranger Builds TrueForge challenge — documented in `stranger-builds.md`:
+
+- `agent/` — the `pm25-forecaster` TrueForge agent: `agent.json`, its
+  `instructions.md`, and `skills/pm25-strategy/SKILL.md`, the playbook the
+  agent rewrites itself (the TrueForge analogue of `prediction.py`'s params).
+- `evals/` — 8 fixed forecast tasks built from `data/aeroloop.db` matched
+  pairs (features + measured ground truth; 2 holdout) and `score.ts`, a
+  deterministic port of `evaluation.py`'s error logic (score = 1 − |err|/8).
+- `scripts/` — TypeScript driver around `@truefoundry/trueforge-sdk`:
+  `configure-model` (registers model providers incl. the organisers' managed
+  AI Gateway), `setup`, `run-evals` (one TrueForge session = one run),
+  `improve` (the agent rewrites `agent/`, committed with `Agent-Session:`),
+  `export-session`, `score`. `runs/` holds every run's results, session
+  export and `summary.csv`.

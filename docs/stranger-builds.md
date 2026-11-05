@@ -51,9 +51,9 @@ exist in a qualifying repo, however they got there.
 - PASS — public, not a fork, created 2026-10-31T23:25Z (>24h after the
   Fri 30 Oct 23:00 UTC opening)
 - PASS — no exclusivity rule; prior DEV submission is fine
-- FAIL (fixable) — no `agent/`, `evals/`, `runs/` layout yet
-- FAIL (fixable) — no TrueForge sessions; no `Agent-Session:` commits
-- TODO — "Run 1 vs run N" README section; video/launch proof; blurb; feedback note
+- FIXED — `agent/`, `evals/`, `runs/` built; 8 TrueForge sessions recorded;
+  `Agent-Session:` commits in place; README has "Run 1 vs run N"
+- TODO — video/launch proof; blurb; feedback note
 
 ## Track: Hard problems
 
