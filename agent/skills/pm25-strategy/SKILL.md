@@ -8,11 +8,13 @@ description: The estimation strategy for turning CAMS model output and weather f
 The CAMS/Open-Meteo model is a gridded forecast, but the monitor is already
 assimilated into it, so it is the best estimate available.
 
-**Rule: estimate = pm25_model + 2.0**
+**Rule: estimate = pm25_model, unchanged.**
 
-This correction applies to all stations and times.
+Weather and station context are secondary; do not adjust for them.
 
-**Rule: if station is marylebone, estimate = pm25_model + 4.6**
-
-This correction applies only to Marylebone.
+<!--
+This strategy is deliberately simple. The improve step (npm run improve) asks
+the agent to add, sharpen or remove rules here based on the errors the scorer
+reported in its last run: systematic under- or over-reads, station effects,
+weather effects.
 -->
