@@ -103,16 +103,25 @@ a PM2.5-forecasting agent whose estimation strategy lives in
   station/hour scenarios (`evals/tasks/`); score = 100 × mean(1 − |predicted −
   measured| / 8) per task (`runs/summary.csv`).
 * **Run 1 → run 4:** 63.91 → 86.09 — peak 87.03 at run 2; all 8 tasks pass by
-  run 4 (`runs/summary.csv`).
+  run 4 (`runs/summary.csv`). Then, on a clean-room replay on the sponsor
+  gateway, **run 6 → run 7:** 63.91 → 80.63.
 * **The change that did it:** commit `8b8c1d1` — after run 1 the agent added a
   flat +3.0 µg/m³ correction to its strategy (`Agent-Session:
   01m6ptf9n9rmc2cn38kbbns1kb`).
 * **What the agent learned:** the CAMS model systematically under-reads the
   ground monitors; after overshooting once (+3.0 → +2.0, an honest regression
   to 83.28) it learned a station-specific correction — +2.0 everywhere, +4.6
-  at Marylebone.
-* **What still fails:** nothing on the task set — the residual error is
-  irreducible monitor noise (~±3 µg/m³).
+  at Marylebone. On the second arc a different model reached the same
+  conclusion a different way: a ×1.20 uplift (`Agent-Session:
+  01m6pw7n97x4g1k9mavc9k3frh`) — same lesson, different hypothesis.
+* **What still fails:** nothing material on the task set — the residual error
+  is irreducible monitor noise (~±3 µg/m³). Run 5 (55.94) carries one
+  transient transport error, kept in the record rather than silently rerun.
+
+Two independent learning arcs are in the record: runs 1–4 on
+`huggingface/gemma-3-27b-it`, runs 5–8 on `truefoundry/kimi-k27-code`
+(open weights served through the organisers' managed AI Gateway, on the
+provided credits).
 
 ### Run it
 

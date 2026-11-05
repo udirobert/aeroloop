@@ -102,6 +102,13 @@ Done (2026-11-05):
   63.91 → 87.03 → 83.28 → 86.09 (all 8 tasks pass by run 4). Three
   `Agent-Session:` self-edit commits sit between the run commits, exactly the
   pattern the auto-checks verify. README has the "Run 1 vs run N" section.
+- Second arc on the organisers' managed AI Gateway
+  (`https://stranger-builds.truefoundry.cloud/api/llm`, PAT in `.env` as
+  `TRUEFORGE_TOKEN`, registered via `configure-model.ts` as a `custom`
+  provider): runs 5–8 on `truefoundry/kimi-k27-code` (open weights, sponsor
+  credits) — 55.94 (one transport error) → 63.91 → 80.63 → 80.78. Only
+  claude-* and kimi-k2.7-code on the gateway stream in a format TrueForge
+  accepts; the others return raw NDJSON and are left unregistered.
 - Features used: skills (inline pm25-strategy) + SDK + subagents (on by
   default) — meets the "2+ of" rule.
 
