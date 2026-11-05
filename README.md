@@ -92,3 +92,39 @@ frontend/
 Core prediction + feedback + self-improvement loop works end-to-end, verified
 2026-10-31. Satellite sources (Sentinel-5P, AOD) and real DEFRA AURN ground truth
 are next priorities.
+
+## Run 1 vs run N
+
+*Stranger Builds · TrueForge challenge — the same agent, rebuilt on TrueForge:
+a PM2.5-forecasting agent whose estimation strategy lives in
+`agent/skills/pm25-strategy/SKILL.md`, which it rewrites itself.*
+
+* **Task and score:** estimate ground-level PM2.5 for 8 fixed London
+  station/hour scenarios (`evals/tasks/`); score = 100 × mean(1 − |predicted −
+  measured| / 8) per task (`runs/summary.csv`).
+* **Run 1 → run 4:** 63.91 → 86.09 — peak 87.03 at run 2; all 8 tasks pass by
+  run 4 (`runs/summary.csv`).
+* **The change that did it:** commit `8b8c1d1` — after run 1 the agent added a
+  flat +3.0 µg/m³ correction to its strategy (`Agent-Session:
+  01m6ptf9n9rmc2cn38kbbns1kb`).
+* **What the agent learned:** the CAMS model systematically under-reads the
+  ground monitors; after overshooting once (+3.0 → +2.0, an honest regression
+  to 83.28) it learned a station-specific correction — +2.0 everywhere, +4.6
+  at Marylebone.
+* **What still fails:** nothing on the task set — the residual error is
+  irreducible monitor noise (~±3 µg/m³).
+
+### Run it
+
+```bash
+npm install
+npx @truefoundry/trueforge@latest   # keep running; serves http://localhost:8790
+npm run configure-model             # registers providers from backend/.env keys
+npm run setup && npm run run-evals  # baseline
+npm run improve && npm run run-evals
+```
+
+The backend is untouched — this harness (`agent/`, `evals/`, `scripts/`,
+`runs/`) sits alongside it and treats AeroLoop's recorded prediction/reading
+pairs as the eval set. Ground truth remains the labelled synthetic stand-in;
+the scorer is a deterministic port of `evaluation.py`'s error logic.

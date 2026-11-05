@@ -93,14 +93,25 @@ schedules, human checkpoints, SDK — skills + SDK + subagents is the easy set.
 
 ## Remaining gaps vs. deadline (~3.5 days from 2026-11-05)
 
+Done (2026-11-05):
+- Harness built in this repo: `agent/` (pm25-forecaster + pm25-strategy skill),
+  `evals/tasks/` (8 scenarios from data/aeroloop.db, 2 holdout),
+  `evals/score.ts` (abs-error scorer), `scripts/` (adapted starter + a
+  `configure-model` step that registers HF router + OpenRouter via the SDK).
+- Real run arc produced on `huggingface/gemma-3-27b-it`:
+  63.91 → 87.03 → 83.28 → 86.09 (all 8 tasks pass by run 4). Three
+  `Agent-Session:` self-edit commits sit between the run commits, exactly the
+  pattern the auto-checks verify. README has the "Run 1 vs run N" section.
+- Features used: skills (inline pm25-strategy) + SDK + subagents (on by
+  default) — meets the "2+ of" rule.
+
+Still open (user-side):
 1. Luma registration → pact → Duck/ASI:One activation → pick TrueForge
    challenge in Duck World (confirm still open)
-2. Build the harness above; `npx @truefoundry/trueforge@latest` running with a
-   configured model
-3. Real run 1 → agent self-edit (`Agent-Session:` commit) → better run N
-4. Proof of launch (§9): X launch post, or ≤2 min demo/pitch video — required
-5. 3-line blurb + half-page TrueForge feedback note
-6. Submit in the app before Sun 8 Nov 23:59 ART; keep repo public through
+2. `git push` — the judged repo is the remote; local commits aren't visible yet
+3. Proof of launch (§9): X launch post, or ≤2 min demo/pitch video — required
+4. 3-line blurb + half-page TrueForge feedback note
+5. Submit in the app before Sun 8 Nov 23:59 ART; keep repo public through
    results on Thu 19 Nov
 
 Prizes for this challenge: best build + runner-up. Optionally a 2nd challenge
