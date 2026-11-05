@@ -1,8 +1,11 @@
 # The Ghost Over London — visual/storytelling plan
 
-Status: Track B skeleton BUILT — /scene serves the spectral 3D city
-(vendored three.js, 26k real OSM buildings, wind-advected CAMS haze,
-station beacons + wisps, film mode). See docs/screenshot-scene.png.
+Status: Track B SHIPPED — /scene serves the spectral 3D city (26k real OSM
+buildings, wind-advected CAMS haze, beacons + wisps, bloom, film mode,
+24h time scrubber, strategy lineage). LAQN real ground truth wired for
+north_kensington (KC1). Assets: docs/screenshot-scene.png,
+docs/ghost-film.{mp4,gif}. Remaining: cover regeneration from film stills,
+richer film choreography, Track A (probably redundant).
 Goal: turn AeroLoop's dashboard from an admin panel into a living simulation —
 London seen from above, breathing, while the agent predicts, errs, and learns.
 
