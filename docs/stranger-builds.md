@@ -112,6 +112,28 @@ Done (2026-11-05):
 - Features used: skills (inline pm25-strategy) + SDK + subagents (on by
   default) — meets the "2+ of" rule.
 
+## Field check (2026-11-05, GitHub code/repo search)
+
+~13 repos adopted the starter for this challenge. Most have **zero runs** in
+summary.csv — clearing the auto-checks alone puts a submission in the top
+third. Serious entries with real run data:
+
+| Repo | Task set | Arc | Model |
+|---|---|---|---|
+| mrlagmer/ghost | 35 | 82.9 → 87.1 → **100** | openai/gpt-6-1-sol |
+| Belukia/the-house-that-learns | 8 | 50 → **100** | tfy/sonnet (sponsor gw) |
+| jalel-masmoudi/skillsmith | 20 | 76 → 81.8 | claude-sonnet-4-6 |
+| imlogambika/TrueForge_Halloweee | 13 | 80 → 86.5 | ? |
+| **udirobert/aeroloop** | 8 | **63.9 → 87.0 / 86.1** + second arc | gemma + tfy/kimi |
+
+Standing: mid-pack on raw score, differentiated by (a) two independent arcs
+on two models incl. open-weights via the sponsor gateway, (b) honest
+regressions + a kept transport-error run, (c) evals built from a real running
+system's recorded data rather than a toy task set. Weaknesses: smallest
+serious task set (8 vs ghost's 35 — tasks are frozen after run 1, can't grow
+mid-history) and a lower peak vs the 100s. People's vote (Fri 6–Sun 15 Nov,
+via ASI:One) is the remaining lever where outside users count.
+
 Still open (user-side):
 1. Luma registration → pact → Duck/ASI:One activation → pick TrueForge
    challenge in Duck World (confirm still open)
