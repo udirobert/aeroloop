@@ -1,0 +1,16 @@
+{
+  "id": "01-bloomsbury-early-morning",
+  "title": "Bloomsbury, early morning",
+  "holdout": false,
+  "station_id": "bloomsbury",
+  "context": "London Bloomsbury monitor, early morning.",
+  "features": {
+    "pm25_model": 24.0,
+    "no2_model": 47.9,
+    "humidity": 94.6,
+    "wind_speed": 8.5,
+    "temperature": 5.4,
+    "precipitation": 0.0
+  },
+  "expected_pm25": 27.1
+}

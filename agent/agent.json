@@ -1,0 +1,9 @@
+{
+  "name": "pm25-forecaster",
+  "description": "Estimates ground-level PM2.5 at a London monitor from CAMS model output and weather features, as JSON.",
+  "model": {
+    "name": "huggingface/gemma-3-27b-it",
+    "params": { "temperature": 0 }
+  },
+  "skill_mode": "inline"
+}

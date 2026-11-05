@@ -1,0 +1,16 @@
+{
+  "id": "07-north-kensington-overnight",
+  "title": "North Kensington, overnight",
+  "holdout": true,
+  "station_id": "north_kensington",
+  "context": "London North Kensington monitor, overnight.",
+  "features": {
+    "pm25_model": 18.5,
+    "no2_model": 41.6,
+    "humidity": 81.3,
+    "wind_speed": 7.2,
+    "temperature": 12.4,
+    "precipitation": 0.0
+  },
+  "expected_pm25": 20.8
+}

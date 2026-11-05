@@ -1,0 +1,16 @@
+{
+  "id": "02-bloomsbury-midday",
+  "title": "Bloomsbury, midday",
+  "holdout": false,
+  "station_id": "bloomsbury",
+  "context": "London Bloomsbury monitor, midday.",
+  "features": {
+    "pm25_model": 14.0,
+    "no2_model": 46.3,
+    "humidity": 89.9,
+    "wind_speed": 11.3,
+    "temperature": 15.1,
+    "precipitation": 0.3
+  },
+  "expected_pm25": 18.0
+}
