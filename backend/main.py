@@ -242,6 +242,12 @@ async def aq_field():
     return await data_sources.get_aq_field()
 
 
+@app.get("/fields-timeline")
+async def fields_timeline(hours: int = 24):
+    """Per-hour wind + PM2.5 fields for the scene's time scrubber."""
+    return await data_sources.get_fields_timeline(min(48, max(1, hours)))
+
+
 @app.get("/scene-state")
 def scene_state():
     """One hydration payload for the Ghost Over London scene."""

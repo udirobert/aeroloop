@@ -278,6 +278,72 @@ async def fetch_aq_field() -> Dict:
             "kind": "modelled (CAMS via Open-Meteo)"}
 
 
+async def fetch_fields_timeline(hours: int = 24) -> Dict:
+    """Per-hour wind + PM2.5 fields for the scene's time scrubber.
+
+    One Open-Meteo call per field; returns the `hours` slots ending at the
+    hour closest to now (past_days=1+forecast_days=1 gives 48 to choose from).
+    """
+    rows_w = await _fetch_multi(WX_URL, "wind_speed_10m,wind_direction_10m")
+    rows_a = await _fetch_multi(AQ_URL, "pm2_5")
+    times = (rows_w[0].get("hourly", {}).get("time") or [])
+    end_idx = _latest_idx(times)
+    sel = list(range(max(0, end_idx - hours + 1), end_idx + 1))
+
+    wind_u, wind_v, pm = [], [], []
+    for i in sel:
+        u_arr, v_arr = [], []
+        for loc in rows_w:
+            h = loc.get("hourly", {})
+            sp = (h.get("wind_speed_10m") or [0.0])[i] or 0.0
+            dr = (h.get("wind_direction_10m") or [0.0])[i] or 0.0
+            uu, vv = _uv(sp, dr)
+            u_arr.append(round(uu, 3))
+            v_arr.append(round(vv, 3))
+        p_arr = []
+        for loc in rows_a:
+            series = loc.get("hourly", {}).get("pm2_5") or []
+            p_arr.append(round(series[i] or 0.0, 2) if i < len(series) else 0.0)
+        wind_u.append(u_arr)
+        wind_v.append(v_arr)
+        pm.append(p_arr)
+
+    return {"hours": [times[i] for i in sel],
+            "nx": GRID_NX, "ny": GRID_NY, "bbox": LONDON_BBOX,
+            "wind_u": wind_u, "wind_v": wind_v, "pm25": pm,
+            "kind": "modelled (CAMS via Open-Meteo)"}
+
+
+def _synthetic_fields_timeline(hours: int = 24) -> Dict:
+    """A day of synthetic fields — wind veers slowly, haze builds overnight."""
+    import math
+    import random
+    rng = random.Random(11)
+    base_w = _synthetic_wind_field()
+    base_a = _synthetic_aq_field()
+    now = datetime.now(timezone.utc).replace(minute=0, second=0, microsecond=0)
+    out_hours, wu, wv, pm = [], [], [], []
+    for h in range(hours):
+        t = now - timedelta(hours=hours - 1 - h)
+        out_hours.append(t.strftime("%Y-%m-%dT%H:%M"))
+        phase = h / hours * math.pi * 2
+        wu.append([round(u + 2.0 * math.sin(phase), 3) for u in base_w["records"][0]["data"]])
+        wv.append([round(v + 1.2 * math.cos(phase), 3) for v in base_w["records"][1]["data"]])
+        night = 1.35 if (t.hour < 6 or t.hour > 20) else 0.8
+        pm.append([round(min(60.0, p * night + rng.uniform(-1, 1)), 2) for p in base_a["pm25"]])
+    return {"hours": out_hours, "nx": GRID_NX, "ny": GRID_NY, "bbox": LONDON_BBOX,
+            "wind_u": wu, "wind_v": wv, "pm25": pm,
+            "kind": "synthetic field (offline stand-in)"}
+
+
+async def get_fields_timeline(hours: int = 24) -> Dict:
+    return await _with_cache(
+        f"fields-timeline-{hours}",
+        lambda: fetch_fields_timeline(hours),
+        lambda: _synthetic_fields_timeline(hours),
+    )
+
+
 def _synthetic_wind_field() -> Dict:
     """Deterministic gentle westerly flow for fully-offline first run."""
     import math

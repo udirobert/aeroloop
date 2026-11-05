@@ -30,20 +30,27 @@ const HAZE_N = 15000;
 // ---------- data ----------
 async function j(url, opts) { const r = await fetch(url, opts); if (!r.ok) throw new Error(url); return r.json(); }
 
-const [city, windField, aqField, sceneState] = await Promise.all([
-  j('/static/london-city.json'), j('/wind-field'), j('/aq-field'), j('/scene-state'),
+const [city, tl, sceneState] = await Promise.all([
+  j('/static/london-city.json'), j('/fields-timeline?hours=24'), j('/scene-state'),
 ]);
 
-const wind = {
-  u: windField.records[0].data, v: windField.records[1].data,
-  h: windField.records[0].header,
-};
-const aq = { pm: aqField.pm25, nx: aqField.nx, ny: aqField.ny, b: aqField.bbox };
+// current hour index — the scrubber drives this
+let hour = tl.hours.length - 1;
+const wb = { west: tl.bbox.west, east: tl.bbox.east, south: tl.bbox.south, north: tl.bbox.north };
+const wind = { h: { nx: tl.nx, ny: tl.ny }, u: tl.wind_u[hour], v: tl.wind_v[hour] };
+const aq = { pm: tl.pm25[hour], nx: tl.nx, ny: tl.ny, b: tl.bbox };
+
+function setHour(h) {
+  hour = Math.max(0, Math.min(tl.hours.length - 1, h));
+  wind.u = tl.wind_u[hour];
+  wind.v = tl.wind_v[hour];
+  aq.pm = tl.pm25[hour];
+  document.getElementById('timeLabel').textContent = tl.hours[hour].replace('T', ' ') + ' UTC';
+}
 
 document.getElementById('sources').innerHTML =
   `<span>geometry <b>${city.source || 'OpenStreetMap'}</b></span>` +
-  `<span>wind <b>${windField.source}</b></span>` +
-  `<span>haze <b>${aqField.kind} · ${aqField.source}</b></span>`;
+  `<span>fields <b>${tl.kind} · ${tl.source}</b></span>`;
 
 // ---------- bilinear field samplers (lat/lon space) ----------
 function bilinear(arr, nx, ny, bbox, lat, lon) {
@@ -56,7 +63,6 @@ function bilinear(arr, nx, ny, bbox, lat, lon) {
   const c = arr[y1 * nx + x0], d = arr[y1 * nx + x1];
   return (a * (1 - tx) + b * tx) * (1 - ty) + (c * (1 - tx) + d * tx) * ty;
 }
-const wb = { west: wind.h.lo1, east: wind.h.lo2, south: wind.h.la2, north: wind.h.la1 };
 const windAt = (x, z) => {           // world metres → lat/lon → (u,v) m/s
   const lon = x / M_LON + LON0, lat = -z / M_LAT + LAT0;
   return [bilinear(wind.u, wind.h.nx, wind.h.ny, wb, lat, lon),
@@ -334,6 +340,46 @@ document.getElementById('btnDemo').onclick = async () => {
   setTimeout(() => { if (!filming) capEl.style.opacity = 0; }, 5000);
 };
 
+// ---------- time scrubber + lineage ----------
+const scrubEl = document.getElementById('scrub');
+scrubEl.max = tl.hours.length - 1;
+scrubEl.value = tl.hours.length - 1;
+scrubEl.oninput = () => setHour(+scrubEl.value);
+setHour(tl.hours.length - 1);
+
+let timePlaying = false, timeAcc = 0;
+document.getElementById('btnTime').onclick = (e) => {
+  timePlaying = !timePlaying;
+  e.target.textContent = timePlaying ? '❚❚' : '▶';
+  if (timePlaying && hour >= tl.hours.length - 1) setHour(scrubEl.value = 0);
+};
+
+// strategy lineage — kept spine, ghost branches (left rail)
+(function buildLineage() {
+  const rowH = 24, nodeR = 4;
+  const strats = sceneState.strategies;
+  if (!strats.length) return;
+  const yOf = {};
+  let y = 18, svg = '';
+  for (const s of strats) {
+    const py = yOf[s.parent];
+    if (s.kept) {
+      if (py != null) svg += `<line x1="14" y1="${py}" x2="14" y2="${y}" stroke="#3b4a6b"/>`;
+      svg += `<circle cx="14" cy="${y}" r="${nodeR}" fill="#8b7cff"/>` +
+             `<text x="26" y="${y + 3}" class="verdict-kept" fill="#a5f3c8" font-size="10">${s.version}</text>`;
+      yOf[s.version] = y;
+    } else {
+      const ay = py != null ? py : y - 8;
+      svg += `<line x1="14" y1="${ay}" x2="58" y2="${y}" stroke="#4a3f6e" stroke-dasharray="3 3"/>` +
+             `<circle cx="62" cy="${y}" r="${nodeR}" fill="none" stroke="#8d83b8" stroke-dasharray="2 2"/>` +
+             `<text x="72" y="${y + 3}" fill="#8d83b8" font-size="10" font-style="italic">${s.version} 👻</text>`;
+    }
+    y += rowH;
+  }
+  document.getElementById('lineage').innerHTML =
+    `<svg width="170" height="${y + 10}">${svg}</svg>`;
+})();
+
 const smooth = t => t * t * (3 - 2 * t);
 function playFilm(dt) {
   filmT += dt;
@@ -392,6 +438,14 @@ function tick() {
     }
     geo.attributes.position.needsUpdate = true;
     geo.attributes.color.needsUpdate = true;
+  }
+  if (timePlaying) {
+    timeAcc += dt;
+    if (timeAcc > 1.1) {                       // ~1.1s per hour of the day
+      timeAcc = 0;
+      if (hour < tl.hours.length - 1) setHour(scrubEl.value = hour + 1);
+      else { timePlaying = false; document.getElementById('btnTime').textContent = '▶'; }
+    }
   }
   if (filming) playFilm(dt); else controls.update();
   composer.render();
