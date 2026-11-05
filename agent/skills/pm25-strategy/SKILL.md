@@ -8,9 +8,10 @@ description: The estimation strategy for turning CAMS model output and weather f
 The CAMS/Open-Meteo model is a gridded forecast, but the monitor is already
 assimilated into it, so it is the best estimate available.
 
-**Rule: estimate = pm25_model × 1.20.**
+**Rule: estimate = pm25_model × uplift.**
 
-The coarse-resolution forecast under-represents street-level PM2.5 in London;
-apply a fixed 20% uplift to account for this local-source bias.
+- Base uplift: **1.20**.
+- If **wind_speed > 10 km/h**, use uplift **1.10** instead. Stronger wind dilutes
+  street-level PM2.5, so the local-source enhancement is smaller.
 
-Weather and station context are secondary; do not adjust for them.
+Other weather and station context are secondary; do not adjust for them.
