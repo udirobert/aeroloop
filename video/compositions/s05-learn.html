@@ -36,6 +36,19 @@
       font-size: 24px; color: #7d8f8a; opacity: 0;
     }
     #guard b { color: #e6ede8; }
+    /* the graveyard — rejected strategies stay in the record */
+    #graveyard { position: absolute; left: 96px; bottom: 90px; display: flex; gap: 30px; align-items: flex-end; }
+    .ts {
+      width: 120px; padding: 14px 0 12px; text-align: center;
+      background: #101619; border: 1px solid #2a3532;
+      border-radius: 60px 60px 6px 6px;
+      font-size: 19px; color: #8d83b8; letter-spacing: 0.04em; opacity: 0;
+    }
+    .ts small { display: block; font-size: 14px; color: #5d6660; margin-top: 4px; }
+    #gy-label {
+      position: absolute; left: 96px; bottom: 190px;
+      font-size: 20px; color: #5d6660; letter-spacing: 0.08em; opacity: 0;
+    }
   </style>
 
   <div class="clip" id="s05-stage" data-start="0" data-duration="15.6">
@@ -60,6 +73,12 @@
         <span class="dl add" id="a3"><span class="sign">+</span>no2 traffic term: marylb <b>.12</b> · westmn .06</span>
         <span class="dl add" id="a4"><span class="sign">+</span>wind &gt; 20 km/h → ×0.95</span>
       </div>
+    </div>
+    <div id="gy-label" data-layout-ignore>the graveyard · rejected edits stay in the record</div>
+    <div id="graveyard" data-layout-ignore>
+      <div class="ts">v7<small>rejected</small></div>
+      <div class="ts">run-12 edit<small>overfit guard</small></div>
+      <div class="ts">…<small>kept, not hidden</small></div>
     </div>
     <div id="guard" data-layout-ignore><b>overfit guard:</b> rejected a memorizing edit — kept in the record</div>
   </div>
@@ -89,6 +108,9 @@
       tl.fromTo("#"+id, {opacity:0,x:-16},{opacity:1,x:0,duration:0.4,ease:"power3.out"}, 8.2 + k*1.1);
     });
     tl.to("#guard", {opacity:1, duration:0.5}, 12.2);
+    // the graveyard rises while the guard note lands
+    tl.to("#gy-label", {opacity:1, duration:0.4}, 12.0);
+    tl.fromTo(".ts", {opacity:0, y:18}, {opacity:1, y:0, duration:0.5, stagger:0.45, ease:"power3.out"}, 12.4);
 
     tl.seek(0);
     window.__timelines = window.__timelines || {};

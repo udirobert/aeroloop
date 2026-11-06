@@ -34,6 +34,26 @@
       "name": "caption-pill-karaoke",
       "type": "hyperframes:component",
       "target": "compositions/components/caption-pill-karaoke.html"
+    },
+    {
+      "name": "particle-text-dissolve",
+      "type": "hyperframes:component",
+      "target": "compositions/components/particle-text-dissolve.html"
+    },
+    {
+      "name": "offset-path-traveler",
+      "type": "hyperframes:component",
+      "target": "compositions/components/offset-path-traveler.html"
+    },
+    {
+      "name": "headline-slam",
+      "type": "hyperframes:component",
+      "target": "compositions/components/headline-slam.html"
+    },
+    {
+      "name": "particle-image-reveal",
+      "type": "hyperframes:component",
+      "target": "compositions/components/particle-image-reveal.html"
     }
   ]
 }

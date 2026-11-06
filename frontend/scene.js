@@ -1,6 +1,9 @@
 // The Ghost Over London — spectral 3D scene.
 // Real OSM geometry as luminous wireframe; modelled PM2.5 as the only solid
 // thing in the frame; the agent's errors rise off the stations as wisps.
+// ?capture — deterministic frame-stepped capture for the submission video:
+// no RAF loop, HUD hidden, window.__step(i) renders frame i at 30fps.
+const CAPTURE = new URLSearchParams(location.search).has('capture');
 import * as THREE from 'three';
 import { OrbitControls } from '/static/vendor/OrbitControls.js';
 import { EffectComposer } from '/static/vendor/postprocessing/EffectComposer.js';
@@ -74,7 +77,7 @@ const pm25At = (x, z) => {
 };
 
 // ---------- renderer / scene ----------
-const renderer = new THREE.WebGLRenderer({ antialias: true });
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: CAPTURE });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.setSize(innerWidth, innerHeight);
 renderer.setClearColor(COL.bg);
@@ -383,11 +386,12 @@ document.getElementById('btnTime').onclick = (e) => {
 const smooth = t => t * t * (3 - 2 * t);
 function playFilm(dt) {
   filmT += dt;
+  const SHOTS = window.__FILM_OVERRIDE || FILM;
   let acc = 0;
-  for (const k of FILM) {
+  for (const k of SHOTS) {
     if (filmT < acc + k.dur) {
-      const i = FILM.indexOf(k);
-      const prev = i ? FILM[i - 1] : { pos: k.pos, look: k.look };
+      const i = SHOTS.indexOf(k);
+      const prev = i ? SHOTS[i - 1] : { pos: k.pos, look: k.look };
       const t = smooth(Math.min(1, (filmT - acc) / Math.min(3, k.dur)));
       camera.position.set(
         prev.pos[0] + (k.pos[0] - prev.pos[0]) * t,
@@ -397,6 +401,7 @@ function playFilm(dt) {
       const ly = prev.look[1] + (k.look[1] - prev.look[1]) * t;
       const lz = prev.look[2] + (k.look[2] - prev.look[2]) * t;
       camera.lookAt(lx, ly, lz);
+      if (CAPTURE) return;
       capEl.textContent = k.cap;
       capEl.style.opacity = (filmT - acc) > 0.6 && (filmT - acc) < k.dur - 0.8 ? 1 : 0;
       if (i === 4 && !playFilm._v4) {
@@ -420,9 +425,7 @@ function playFilm(dt) {
 // ---------- loop ----------
 const clock = new THREE.Clock();
 let t0 = 0;
-function tick() {
-  requestAnimationFrame(tick);
-  const dt = Math.min(0.05, clock.getDelta());
+function stepWorld(dt) {
   t0 += dt;
   updateHaze(dt);
   beaconMats.forEach((m, i) => m.opacity = 0.18 + 0.12 * (0.5 + 0.5 * Math.sin(t0 * 1.8 + i * 1.3)));
@@ -439,6 +442,11 @@ function tick() {
     geo.attributes.position.needsUpdate = true;
     geo.attributes.color.needsUpdate = true;
   }
+}
+function tick() {
+  requestAnimationFrame(tick);
+  const dt = Math.min(0.05, clock.getDelta());
+  stepWorld(dt);
   if (timePlaying) {
     timeAcc += dt;
     if (timeAcc > 1.1) {                       // ~1.1s per hour of the day
@@ -450,7 +458,37 @@ function tick() {
   if (filming) playFilm(dt); else controls.update();
   composer.render();
 }
-tick();
+
+if (CAPTURE) {
+  document.getElementById('hud').style.display = 'none';
+  document.getElementById('scrubber').style.display = 'none';
+  document.getElementById('lineage').style.display = 'none';
+  document.getElementById('caption').style.display = 'none';
+  filming = true;
+  controls.enabled = false;
+  const FDT = 1 / 30;
+  window.__step = (i) => {
+    filmT = i * FDT;
+    stepWorld(FDT);
+    playFilm(0);
+    filming = true;
+    composer.render();
+  };
+  // step every frame and POST each PNG to a local collector
+  window.__capture = async (n, base) => {
+    for (let i = 0; i < n; i++) {
+      window.__step(i);
+      const blob = await new Promise(r => renderer.domElement.toBlob(r, 'image/png'));
+      const r = await fetch((base || 'http://127.0.0.1:8799') + '/frame?i=' + i,
+        { method: 'POST', body: blob });
+      if (!r.ok) return 'frame ' + i + ' upload failed: ' + r.status;
+    }
+    return 'done ' + n;
+  };
+  window.__ready = true;
+} else {
+  tick();
+}
 
 addEventListener('resize', () => {
   camera.aspect = innerWidth / innerHeight;

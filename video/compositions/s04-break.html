@@ -8,17 +8,11 @@
       background: transparent; color: #e6ede8;
       font-family: "JetBrains Mono", monospace;
     }
-    #grid-wrap { position: absolute; left: 96px; top: 170px; width: 1050px; }
-    .st { font-size: 28px; color: #7d8f8a; letter-spacing: 0.1em; margin: 0 0 14px 4px; }
-    .row { display: flex; gap: 14px; margin-bottom: 14px; }
-    .chip {
-      width: 152px; height: 62px; border: 1px solid #243330; border-radius: 8px;
-      background: #12181d; display: flex; align-items: center; justify-content: center;
-      font-size: 22px; color: #7d8f8a; opacity: 0;
+    #cv { position: absolute; inset: 0; }
+    #map-head {
+      position: absolute; left: 96px; top: 150px;
+      font-size: 28px; color: #7d8f8a; letter-spacing: 0.1em;
     }
-    .chip.lit { color: #e6ede8; border-color: #3d5a55; }
-    .chip.hold { border-style: dashed; }
-    .chip.bad { border-color: #ff5b4d; color: #ff5b4d; }
     #flip {
       position: absolute; right: 96px; top: 200px; width: 620px; text-align: right;
     }
@@ -48,25 +42,8 @@
   </style>
 
   <div class="clip" id="s04-stage" data-start="0" data-duration="10.4">
-    <div id="grid-wrap">
-      <div class="st">evals/hard/tasks · 24 unseen forecasts · 4 holdout</div>
-      <div class="row">
-        <div data-layout-ignore class="chip">blooms 19h</div><div data-layout-ignore class="chip">blooms 00h</div><div data-layout-ignore class="chip">blooms 04h</div>
-        <div data-layout-ignore class="chip">blooms 08h</div><div data-layout-ignore class="chip">blooms 14h</div><div data-layout-ignore class="chip hold">blooms 20h ◇</div>
-      </div>
-      <div class="row">
-        <div data-layout-ignore class="chip">marylb 19h</div><div data-layout-ignore class="chip">marylb 00h</div><div data-layout-ignore class="chip">marylb 04h</div>
-        <div data-layout-ignore class="chip">marylb 08h</div><div data-layout-ignore class="chip">marylb 14h</div><div data-layout-ignore class="chip hold">marylb 20h ◇</div>
-      </div>
-      <div class="row">
-        <div data-layout-ignore class="chip">n.kens 19h</div><div data-layout-ignore class="chip">n.kens 00h</div><div data-layout-ignore class="chip">n.kens 04h</div>
-        <div data-layout-ignore class="chip">n.kens 08h</div><div data-layout-ignore class="chip">n.kens 14h</div><div data-layout-ignore class="chip hold">n.kens 20h ◇</div>
-      </div>
-      <div class="row">
-        <div data-layout-ignore class="chip">westmn 19h</div><div data-layout-ignore class="chip">westmn 00h</div><div data-layout-ignore class="chip">westmn 04h</div>
-        <div data-layout-ignore class="chip">westmn 08h</div><div data-layout-ignore class="chip">westmn 14h</div><div data-layout-ignore class="chip hold">westmn 20h ◇</div>
-      </div>
-    </div>
+    <canvas id="cv" width="1920" height="1080" data-layout-ignore></canvas>
+    <div id="map-head">evals/hard · 24 unseen forecasts across london</div>
     <div id="flip">
       <div class="lab">frozen playbook · score</div>
       <div id="fnum">87.03</div>
@@ -80,33 +57,69 @@
 
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
   <script>
-    var tl = gsap.timeline({ paused: true });
-    var chips = document.querySelectorAll(".chip");
-    chips.forEach(function(c,i){
-      var t = 0.4 + i*0.11;
-      tl.to(c, {opacity:1, duration:0.18}, t);
-      tl.set(c, {className:"+=chip lit"+(c.className.match(/hold/)?" hold":"")}, t+0.05);
-    });
-    // score collapse when VO says "fifty-five" (~40s abs => ~5.4 local)
-    var S=5.2, D=1.3, FPS=30, N=Math.round(D*FPS), ease=gsap.parseEase("sine.inOut");
-    var num=document.getElementById("fnum");
-    for (var f=0; f<=N; f++){
-      var v = 87.03 + (55.10-87.03)*ease(f/N);
-      tl.set(num, {textContent: v.toFixed(2)}, S + f/FPS);
+    // — spectral haze kit (shared) —
+    function M(s){return function(){s|=0;s=s+0x6D2B79F5|0;var t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+    var CV=document.getElementById("cv"),CX=CV.getContext("2d"),W=CV.width,H=CV.height;
+    function haze(n,seed){var R=M(seed),P=[];for(var i=0;i<n;i++)P.push({x:R()*W,y:R()*H,vx:(R()-.5)*12,vy:(R()-.5)*7,r:.6+R()*2,a:.05+R()*.15});return function(t){for(var i=0;i<n;i++){var p=P[i],x=(p.x+p.vx*t)%W,y=(p.y+p.vy*t)%H;if(x<0)x+=W;if(y<0)y+=H;var tw=.5+.5*Math.sin(t*.7+i*1.7);CX.globalAlpha=p.a*tw;CX.fillStyle="#57e6c9";CX.beginPath();CX.arc(x,y,p.r,0,7);CX.fill()}}}
+    function fog(seed){var R=M(seed),B=[];for(var i=0;i<4;i++)B.push({x:R()*W,y:H*(.12+R()*.76),r:H*(.3+R()*.45),vx:(R()-.5)*26,a:.05+R()*.06});return function(t){for(var i=0;i<B.length;i++){var b=B[i],x=b.x+b.vx*t;if(x<-b.r)x+=W+2*b.r;if(x>W+b.r)x-=W+2*b.r;var g=CX.createRadialGradient(x,b.y,0,x,b.y,b.r);g.addColorStop(0,"rgba(110,105,190,"+b.a+")");g.addColorStop(1,"rgba(110,105,190,0)");CX.fillStyle=g;CX.fillRect(x-b.r,b.y-b.r,2*b.r,2*b.r)}}}
+
+    // beacon map: 4 stations (geographic-ish), 24 task nodes clustered on them.
+    var R0=M(77);
+    var STA=[
+      {n:"n. kensington", x:300, y:330},
+      {n:"marylebone",   x:560, y:430},
+      {n:"bloomsbury",   x:640, y:260},
+      {n:"westminster",  x:800, y:560}
+    ];
+    var NODES=[],BAD=[1,4,6,9,11,13,15,17,19,20,22,23];
+    for(var s=0;s<4;s++)for(var k=0;k<6;k++){
+      var a=(k/6)*6.283+R0()*.5, rr=95+R0()*120;
+      NODES.push({st:s,x:STA[s].x+Math.cos(a)*rr*1.35,y:STA[s].y+Math.sin(a)*rr*0.8,
+        on:0.4+(s*6+k)*0.11,bad:BAD.indexOf(s*6+k)>=0});
     }
-    tl.to(num, {color:"#ff5b4d", duration:0.8}, S+0.3);
-    // mark the failing chips (12 of 24 failed → paint ~12 red, deterministic pick)
-    var badIdx=[0,2,5,7,9,11,13,15,17,19,21,23];
-    badIdx.forEach(function(bi,k){
-      var c=chips[bi]; var t=S+1.0+k*0.09;
-      tl.set(c, {className:"+=chip lit bad"+(c.className.match(/hold/)?" hold":"")}, t);
-    });
-    tl.set("#strike", {scaleX:0}, 0);
-    tl.to("#strike", {scaleX:1, duration:0.35, ease:"power4.in"}, 7.6);
-    tl.to("#strike-card", {opacity:0.55, duration:0.4}, 7.9);
-    tl.fromTo("#stamp", {opacity:0,scale:1.7},{opacity:1,scale:1,duration:0.22,ease:"power4.in"}, 8.4);
-    tl.to("#stamp", {scale:1.04, duration:0.12, ease:"power2.out"}, 8.62);
-    tl.to("#stamp", {scale:1.0, duration:0.12, ease:"power2.out"}, 8.74);
+    function map(t){
+      var S=5.2,badStart=S+1.0;
+      for(var s=0;s<4;s++){
+        var pu=.5+.5*Math.sin(t*1.8+s*1.3);
+        CX.globalAlpha=.25+.2*pu;CX.strokeStyle="#67e8f9";CX.lineWidth=2;
+        CX.beginPath();CX.arc(STA[s].x,STA[s].y,26+7*pu,0,7);CX.stroke();
+        CX.globalAlpha=.9;CX.fillStyle="#67e8f9";
+        CX.beginPath();CX.arc(STA[s].x,STA[s].y,4,0,7);CX.fill();
+        CX.globalAlpha=.55;CX.font="20px 'JetBrains Mono'";CX.fillStyle="#7d8f8a";
+        CX.textAlign="center";CX.fillText(STA[s].n,STA[s].x,STA[s].y-42);
+      }
+      for(var i=0;i<NODES.length;i++){
+        var d=NODES[i];
+        if(t<d.on)continue;
+        var lit=(t-d.on)/0.35;lit=lit>1?1:lit;
+        var bad=d.bad&&t>badStart+(i%12)*0.07;
+        CX.globalAlpha=lit*(bad?.85:.75);
+        CX.fillStyle=bad?"#ff5b4d":"#57e6c9";
+        CX.beginPath();CX.arc(d.x,d.y,bad?6:5,0,7);CX.fill();
+        if(bad){CX.globalAlpha=.35;CX.strokeStyle="#ff5b4d";CX.lineWidth=1.5;
+          CX.beginPath();CX.arc(d.x,d.y,10+3*Math.sin(t*3+i),0,7);CX.stroke();}
+      }
+      CX.globalAlpha=1;
+    }
+
+    var tl = gsap.timeline({ paused: true,
+      onUpdate:function(){var t=tl.time();CX.clearRect(0,0,W,H);CX.globalAlpha=1;FOG(t);HAZE(t);map(t)}});
+    var FOG=fog(9),HAZE=haze(300,17);
+
+    // score collapse when VO says "fifty-five" (~5.2 local)
+    var S=5.2,D=1.3,FPS=30,N=Math.round(D*FPS),ease=gsap.parseEase("sine.inOut");
+    var num=document.getElementById("fnum");
+    for(var f=0;f<=N;f++){
+      var v=87.03+(55.10-87.03)*ease(f/N);
+      tl.set(num,{textContent:v.toFixed(2)},S+f/FPS);
+    }
+    tl.to(num,{color:"#ff5b4d",duration:0.8},S+0.3);
+    tl.set("#strike",{scaleX:0},0);
+    tl.to("#strike",{scaleX:1,duration:0.35,ease:"power4.in"},7.6);
+    tl.to("#strike-card",{opacity:0.55,duration:0.4},7.9);
+    tl.fromTo("#stamp",{opacity:0,scale:1.7},{opacity:1,scale:1,duration:0.22,ease:"power4.in"},8.4);
+    tl.to("#stamp",{scale:1.04,duration:0.12,ease:"power2.out"},8.62);
+    tl.to("#stamp",{scale:1.0,duration:0.12,ease:"power2.out"},8.74);
     tl.seek(0);
     window.__timelines = window.__timelines || {};
     window.__timelines["s04-break"] = tl;
