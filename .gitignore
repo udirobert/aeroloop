@@ -14,3 +14,6 @@ video/renders/
 video/assets/*.mp4
 video/assets/*.mov
 video/assets/*.webm
+
+# video working files: rendered media + HyperFrames artifacts stay local
+video/.thumbnails/
