@@ -10,6 +10,11 @@
     }
     #cv { position: absolute; inset: 0; }
     #wisp { position: absolute; left: 50%; top: 340px; margin-left: -420px; }
+    #kicker2 {
+      position: absolute; top: 330px; left: 0; right: 0; text-align: center;
+      font-size: 26px; color: #b455f0; letter-spacing: 0.34em; opacity: 0;
+      text-shadow: 0 0 22px rgba(180,85,240,0.55);
+    }
     #mark {
       position: absolute; top: 420px; left: 0; right: 0; text-align: center;
       font-family: "Inter", sans-serif; font-weight: 900; font-size: 170px;
@@ -32,6 +37,7 @@
       <path id="wp" d="M8 50 C 120 10, 200 66, 320 34 S 520 8, 640 40 S 790 58, 832 26"
         stroke="#57e6c9" stroke-width="3" stroke-linecap="round"/>
     </svg>
+    <div id="kicker2">GHOST&nbsp;IN&nbsp;THE&nbsp;MACHINE</div>
     <div id="mark">Aero<span class="g">Loop</span></div>
     <div id="url">github.com/udirobert/aeroloop</div>
     <div id="sub">STRANGER BUILDS · TRUEFORGE CHALLENGE</div>
@@ -68,18 +74,26 @@
       }
       CX.globalAlpha=1;
     }
+    function ghost(x,y,s,a){CX.globalAlpha=a;CX.fillStyle="#e9d5ff";CX.beginPath();CX.arc(x,y,s,Math.PI,0);CX.lineTo(x+s,y+s*1.1);for(var i=0;i<4;i++)CX.quadraticCurveTo(x+s-(i*2+1)*s/4,y+s*(1.1+(i%2?0.22:0.02)),x+s-(i*2+2)*s/4,y+s*1.1);CX.closePath();CX.fill();CX.fillStyle="#0e1216";CX.beginPath();CX.arc(x-s*.35,y-s*.1,s*.13,0,7);CX.arc(x+s*.35,y-s*.1,s*.13,0,7);CX.fill();CX.globalAlpha=1}
+    function floatGhost(t){
+      if(t<4.6)return;
+      var p=Math.min(1,(t-4.6)/2.2);
+      var x=1280-(1-Math.pow(1-p,3))*220+Math.sin(t*0.8)*10, y=490-((t-4.6)*14)+Math.sin(t*1.1)*8;
+      ghost(x,y,22+3*Math.sin(t*1.4),p*0.9);
+    }
     var FOG=function(){var R=M(9),B=[];for(var i=0;i<4;i++)B.push({x:R()*W,y:H*(.12+R()*.76),r:H*(.3+R()*.45),vx:(R()-.5)*26,a:.05+R()*.06});return function(t){for(var i=0;i<B.length;i++){var b=B[i],x=b.x+b.vx*t;if(x<-b.r)x+=W+2*b.r;if(x>W+b.r)x-=W+2*b.r;var g=CX.createRadialGradient(x,b.y,0,x,b.y,b.r);g.addColorStop(0,"rgba(110,105,190,"+b.a+")");g.addColorStop(1,"rgba(110,105,190,0)");CX.fillStyle=g;CX.fillRect(x-b.r,b.y-b.r,2*b.r,2*b.r)}}}();
     var HAZE=haze(340,19);
     var INMARK=puff({text:"AeroLoop",font:"900 170px Inter",cx:960,cy:505,dir:"in",col:"#e6ede8",seed:51,count:2400});
 
     var tl = gsap.timeline({ paused: true,
       onUpdate:function(){var t=tl.time();CX.clearRect(0,0,W,H);CX.globalAlpha=1;
-        FOG(t);HAZE(t);comet(t);
+        FOG(t);HAZE(t);comet(t);floatGhost(t);
         if(t>1.4&&t<3.1)INMARK((t-1.4)/1.7);}});
 
     path.style.strokeDasharray = len;
     path.style.strokeDashoffset = len;
     tl.to(path, {strokeDashoffset: 0, duration: 1.6, ease: "power2.inOut"}, 0.3);
+    tl.fromTo("#kicker2",{opacity:0},{opacity:1,duration:0.6},4.6);
     tl.fromTo("#mark", {opacity:0,y:26,scale:1.02},{opacity:1,y:0,scale:1,duration:0.8,ease:"power3.out"}, 2.2);
     tl.fromTo("#url", {opacity:0,y:12},{opacity:1,y:0,duration:0.5,ease:"power3.out"}, 3.4);
     tl.to("#sub", {opacity:1, duration:0.5}, 4.0);
