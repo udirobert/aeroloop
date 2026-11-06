@@ -58,7 +58,8 @@ uvicorn main:app --reload --port 8000
 Then open `http://localhost:8000` (serves the dashboard), `http://localhost:8000/scene`
 (**The Ghost Over London** — a spectral 3D render of inner London built from real
 OSM geometry, with modelled PM2.5 as wind-advected haze and the agent's errors
-rising off the monitors as wisps; press "play the film"), or `http://localhost:8000/docs`.
+rising off the monitors as wisps; press "play the film" — a captured run lives
+at `docs/ghost-film.mp4` / `.gif`), or `http://localhost:8000/docs`.
 
 **One-click demo:** `POST /demo-day` simulates 24h of predictions + delayed ground
 truth across all 4 stations, fully offline. Then `POST /self-improve` runs the
@@ -89,15 +90,17 @@ frontend/
 - Interpolated/estimated values are never presented as measurements.
 - The holdout split is never touched by tuning — the agent only learns on the
   tune split; the holdout alone decides keep/reject.
-- Synthetic ground readings (demo mode) are deterministic and clearly labelled
-  `synthetic` in the DB — swap in DEFRA AURN for production.
+- Ground truth resolves real LAQN (LondonAir) hourly PM2.5 where a site
+  measures it — currently north_kensington (KC1), once ratified (~5-day lag).
+  Where it doesn't, readings fall back to a deterministic synthetic stand-in,
+  clearly labelled `synthetic` in the DB and in the API response's `source`.
 - If the agent does not improve, it reports that honestly.
 
 ## Status
 
 Core prediction + feedback + self-improvement loop works end-to-end, verified
-2026-10-31. Satellite sources (Sentinel-5P, AOD) and real DEFRA AURN ground truth
-are next priorities.
+2026-10-31. Real LAQN ground truth wired for north_kensington (KC1) 2026-11-05;
+wider AURN coverage, Sentinel-5P/AOD satellite features are next priorities.
 
 ## Run 1 vs run N
 

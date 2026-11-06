@@ -108,8 +108,10 @@ imagination; the holdout is the judge; the graveyard is the audit trail.
 
 - CAMS/Open-Meteo output is a model forecast, never presented as a measurement.
 - The holdout is chronological and untouched by tuning — no leakage.
-- Demo ground truth is a deterministic synthetic stand-in (labelled `synthetic`
-  in the DB); swap in DEFRA AURN for production.
+- Ground truth is real where a real monitor can supply it: LAQN hourly PM2.5
+  for north_kensington (KC1), resolved once ratified (~5-day lag — the
+  delayed-truth mechanic, literally). Elsewhere a deterministic synthetic
+  stand-in, labelled `synthetic` in the DB and the response `source`.
 - If the agent doesn't improve, it says so — and keeps the rejection as evidence.
 
 ## Try it
@@ -128,7 +130,8 @@ uvicorn main:app --port 8000
 
 ## What's next
 
-- Real DEFRA AURN ground truth (the synthetic stand-in is honest scaffolding)
+- Wider real ground truth — LAQN wired for north_kensington (KC1); DEFRA AURN
+  for the remaining stations next (the synthetic stand-in is honest scaffolding)
 - Serve the winning TabPFN strategy for live predictions, not just audit
 - Sentinel-5P / AOD satellite features as a second opinion
 

@@ -84,11 +84,13 @@ Stranger Builds TrueForge challenge — documented in `stranger-builds.md`:
   `instructions.md`, and `skills/pm25-strategy/SKILL.md`, the playbook the
   agent rewrites itself (the TrueForge analogue of `prediction.py`'s params).
 - `evals/` — 8 fixed forecast tasks built from `data/aeroloop.db` matched
-  pairs (features + measured ground truth; 2 holdout) and `score.ts`, a
-  deterministic port of `evaluation.py`'s error logic (score = 1 − |err|/8).
+  pairs (features + measured ground truth; 2 holdout), plus `evals/hard/` —
+  a second, unseen 24-task suite (6/station, 4 holdout) used for the
+  generalization experiment (runs 11–13) — and `score.ts`, a deterministic
+  port of `evaluation.py`'s error logic (score = 1 − |err|/8).
 - `scripts/` — TypeScript driver around `@truefoundry/trueforge-sdk`:
   `configure-model` (registers model providers incl. the organisers' managed
-  AI Gateway), `setup`, `run-evals` (one TrueForge session = one run),
-  `improve` (the agent rewrites `agent/`, committed with `Agent-Session:`),
-  `export-session`, `score`. `runs/` holds every run's results, session
-  export and `summary.csv`.
+  AI Gateway), `setup`, `run-evals` (one TrueForge session = one run;
+  `--tasks-dir` selects the suite), `improve` (the agent rewrites `agent/`,
+  committed with `Agent-Session:`), `export-session`, `score`. `runs/` holds
+  every run's results, session export and `summary.csv`.

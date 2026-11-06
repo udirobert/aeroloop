@@ -1,9 +1,11 @@
 # TrueForge feedback note (draft — for the submission's required half-page)
 
 **What we built:** a PM2.5-forecasting agent that reviews its own runs and
-rewrites its own strategy skill, verified over 10 TrueForge sessions and two
+rewrites its own strategy skill, verified over 13 TrueForge sessions: two
 independent learning arcs (63.91 → 87.03 on hosted Gemma, then 63.91 → 80.78
-on Kimi K2.7 served through the organisers' managed AI Gateway).
+on Kimi K2.7 served through the organisers' managed AI Gateway), plus a
+24-task generalization suite where the agent detected and repaired its own
+overfitting (55.1 → 63.65).
 
 ## What worked well
 
