@@ -1,0 +1,100 @@
+<html lang="en">
+<body>
+<template>
+<div id="root" data-composition-id="s05-learn" data-duration="15.6" data-fps="30">
+  <style>
+    #root {
+      position: absolute; inset: 0; overflow: hidden;
+      background: transparent; color: #e6ede8;
+      font-family: "JetBrains Mono", monospace;
+    }
+    .card {
+      position: absolute; background: #12181d; border: 1px solid #243330;
+      border-radius: 12px; box-shadow: 0 24px 60px rgba(0,0,0,0.45); overflow: hidden;
+    }
+    .bar {
+      padding: 13px 24px; border-bottom: 1px solid #243330;
+      font-size: 22px; color: #7d8f8a;
+    }
+    .bar b { color: #e6ede8; font-weight: 700; }
+    #term { left: 96px; top: 170px; width: 780px; }
+    #term .body { padding: 26px 30px 30px; font-size: 25px; line-height: 1.7; }
+    .pr { color: #57e6c9; font-weight: 700; }
+    .dim { color: #7d8f8a; }
+    .ok { color: #57e6c9; }
+    .caret { display: inline-block; width: 10px; height: 22px; background: #57e6c9; vertical-align: -3px; }
+    #diff { right: 96px; top: 170px; width: 1000px; }
+    #diff .body { padding: 26px 30px 30px; font-size: 28px; line-height: 1.55; }
+    .dl { display: block; white-space: pre-wrap; padding: 6px 14px; border-radius: 5px; }
+    .del { background: rgba(255,91,77,0.10); box-shadow: inset 3px 0 #ff5b4d; color: #d99a94; }
+    .add { background: rgba(87,230,201,0.08); box-shadow: inset 3px 0 #57e6c9; opacity: 0; }
+    .sign { display: inline-block; width: 22px; }
+    .del .sign { color: #ff5b4d; }
+    .add .sign { color: #57e6c9; }
+    #guard {
+      position: absolute; right: 96px; bottom: 90px; width: 960px;
+      font-size: 24px; color: #7d8f8a; opacity: 0;
+    }
+    #guard b { color: #e6ede8; }
+  </style>
+
+  <div class="clip" id="s05-stage" data-start="0" data-duration="15.6">
+    <div class="card" id="term">
+      <div class="bar" data-layout-ignore><b>trueforge session</b> · improve turn</div>
+      <div class="body" id="tbody" data-layout-ignore>
+        <span class="pr">$</span> <span id="cmd"></span><span class="caret" id="car"></span>
+        <div class="dim" id="o1" style="opacity:0">reading 19 failed task reports…</div>
+        <div class="dim" id="o2" style="opacity:0">cause: a single uplift doesn't transfer</div>
+        <div id="o3" style="opacity:0">writing <b>skills/pm25-strategy/SKILL.md</b></div>
+        <div class="ok" id="o4" style="opacity:0">commit a2fcc71 · agent: learn from run 11</div>
+        <div class="dim" id="o5" style="opacity:0">Agent-Session: 01m6pzafqn495g4atv89hpr67</div>
+      </div>
+    </div>
+    <div class="card" id="diff" data-hold>
+      <div class="bar" data-layout-ignore><b>SKILL.md</b> · the self-rewrite</div>
+      <div class="body">
+        <span class="dl del" id="d1"><span class="sign">−</span>estimate = pm25_model × <b>1.20</b></span>
+        <span class="dl add" id="a1"><span class="sign">+</span>estimate = pm25_model × <b>uplift</b> + no2_model × <b>traffic</b></span>
+        <span class="dl add" id="a2"><span class="sign">+</span>uplift: blooms .95 · n.kens .95</span>
+        <span class="dl add" id="a2b"><span class="sign">+</span>westmn <b>1.20</b> · marylb 1.05</span>
+        <span class="dl add" id="a3"><span class="sign">+</span>no2 traffic term: marylb <b>.12</b> · westmn .06</span>
+        <span class="dl add" id="a4"><span class="sign">+</span>wind &gt; 20 km/h → ×0.95</span>
+      </div>
+    </div>
+    <div id="guard" data-layout-ignore><b>overfit guard:</b> rejected a memorizing edit — kept in the record</div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    var tl = gsap.timeline({ paused: true });
+    tl.fromTo("#term", {opacity:0,y:26},{opacity:1,y:0,duration:0.5,ease:"power3.out"}, 0.2);
+    tl.fromTo("#diff", {opacity:0,y:26},{opacity:1,y:0,duration:0.5,ease:"power3.out"}, 0.6);
+
+    // typed command, baked char rows
+    var CMD = "trueforge improve --tasks-dir evals/hard";
+    var cmdEl = document.getElementById("cmd");
+    var T0 = 1.0, PER = 0.045;
+    for (var i = 0; i <= CMD.length; i++) {
+      tl.set(cmdEl, {textContent: CMD.slice(0, i)}, T0 + i * PER);
+    }
+    tl.to("#car", {opacity:0, duration:0.35, repeat:3, yoyo:true}, T0 + CMD.length*PER + 0.1);
+    var printT = T0 + CMD.length * PER + 0.35;
+    ["o1","o2","o3","o4","o5"].forEach(function(id,k){
+      tl.to("#"+id, {opacity:1, duration:0.22}, printT + k*0.62);
+    });
+
+    // the rewrite, on the VO's "rewrote its strategy" (~52 abs → ~7.2 local)
+    tl.to("#d1", {opacity:0.45, duration:0.3}, 7.0);
+    ["a1","a2","a2b","a3","a4"].forEach(function(id,k){
+      tl.fromTo("#"+id, {opacity:0,x:-16},{opacity:1,x:0,duration:0.4,ease:"power3.out"}, 8.2 + k*1.1);
+    });
+    tl.to("#guard", {opacity:1, duration:0.5}, 12.2);
+
+    tl.seek(0);
+    window.__timelines = window.__timelines || {};
+    window.__timelines["s05-learn"] = tl;
+  </script>
+</div>
+</template>
+</body>
+</html>

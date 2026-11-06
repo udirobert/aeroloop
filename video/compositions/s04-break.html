@@ -1,0 +1,117 @@
+<html lang="en">
+<body>
+<template>
+<div id="root" data-composition-id="s04-break" data-duration="10.4" data-fps="30">
+  <style>
+    #root {
+      position: absolute; inset: 0; overflow: hidden;
+      background: transparent; color: #e6ede8;
+      font-family: "JetBrains Mono", monospace;
+    }
+    #grid-wrap { position: absolute; left: 96px; top: 170px; width: 1050px; }
+    .st { font-size: 28px; color: #7d8f8a; letter-spacing: 0.1em; margin: 0 0 14px 4px; }
+    .row { display: flex; gap: 14px; margin-bottom: 14px; }
+    .chip {
+      width: 152px; height: 62px; border: 1px solid #243330; border-radius: 8px;
+      background: #12181d; display: flex; align-items: center; justify-content: center;
+      font-size: 22px; color: #7d8f8a; opacity: 0;
+    }
+    .chip.lit { color: #e6ede8; border-color: #3d5a55; }
+    .chip.hold { border-style: dashed; }
+    .chip.bad { border-color: #ff5b4d; color: #ff5b4d; }
+    #flip {
+      position: absolute; right: 96px; top: 200px; width: 620px; text-align: right;
+    }
+    #flip .lab { font-size: 28px; color: #7d8f8a; letter-spacing: 0.08em; }
+    #fnum {
+      font-family: "Inter", sans-serif; font-weight: 900; font-size: 220px;
+      letter-spacing: -0.04em; line-height: 1; color: #57e6c9;
+      font-variant-numeric: tabular-nums;
+    }
+    #strike-card {
+      position: absolute; right: 96px; top: 640px; width: 620px;
+      background: #12181d; border: 1px solid #243330; border-radius: 12px;
+      padding: 26px 30px; font-size: 28px; color: #8a9a94;
+    }
+    #strike-card .rule { color: #e6ede8; }
+    #strike {
+      position: absolute; left: 18px; right: 18px; top: 50%;
+      height: 5px; background: rgba(255,91,77,0.88); transform-origin: left;
+    }
+    #stamp {
+      position: absolute; right: 190px; top: 480px;
+      border: 5px solid #ff5b4d; border-radius: 8px; padding: 12px 30px;
+      font-family: "Inter", sans-serif; font-weight: 900; font-size: 64px;
+      color: #ff5b4d; letter-spacing: 0.12em;
+      transform: rotate(-4deg); opacity: 0;
+    }
+  </style>
+
+  <div class="clip" id="s04-stage" data-start="0" data-duration="10.4">
+    <div id="grid-wrap">
+      <div class="st">evals/hard/tasks · 24 unseen forecasts · 4 holdout</div>
+      <div class="row">
+        <div data-layout-ignore class="chip">blooms 19h</div><div data-layout-ignore class="chip">blooms 00h</div><div data-layout-ignore class="chip">blooms 04h</div>
+        <div data-layout-ignore class="chip">blooms 08h</div><div data-layout-ignore class="chip">blooms 14h</div><div data-layout-ignore class="chip hold">blooms 20h ◇</div>
+      </div>
+      <div class="row">
+        <div data-layout-ignore class="chip">marylb 19h</div><div data-layout-ignore class="chip">marylb 00h</div><div data-layout-ignore class="chip">marylb 04h</div>
+        <div data-layout-ignore class="chip">marylb 08h</div><div data-layout-ignore class="chip">marylb 14h</div><div data-layout-ignore class="chip hold">marylb 20h ◇</div>
+      </div>
+      <div class="row">
+        <div data-layout-ignore class="chip">n.kens 19h</div><div data-layout-ignore class="chip">n.kens 00h</div><div data-layout-ignore class="chip">n.kens 04h</div>
+        <div data-layout-ignore class="chip">n.kens 08h</div><div data-layout-ignore class="chip">n.kens 14h</div><div data-layout-ignore class="chip hold">n.kens 20h ◇</div>
+      </div>
+      <div class="row">
+        <div data-layout-ignore class="chip">westmn 19h</div><div data-layout-ignore class="chip">westmn 00h</div><div data-layout-ignore class="chip">westmn 04h</div>
+        <div data-layout-ignore class="chip">westmn 08h</div><div data-layout-ignore class="chip">westmn 14h</div><div data-layout-ignore class="chip hold">westmn 20h ◇</div>
+      </div>
+    </div>
+    <div id="flip">
+      <div class="lab">frozen playbook · score</div>
+      <div id="fnum">87.03</div>
+    </div>
+    <div id="strike-card">
+      <span class="rule">estimate = pm25_model × <b>1.20</b></span>
+      <div id="strike"></div>
+    </div>
+    <div id="stamp">OVERFIT</div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    var tl = gsap.timeline({ paused: true });
+    var chips = document.querySelectorAll(".chip");
+    chips.forEach(function(c,i){
+      var t = 0.4 + i*0.11;
+      tl.to(c, {opacity:1, duration:0.18}, t);
+      tl.set(c, {className:"+=chip lit"+(c.className.match(/hold/)?" hold":"")}, t+0.05);
+    });
+    // score collapse when VO says "fifty-five" (~40s abs => ~5.4 local)
+    var S=5.2, D=1.3, FPS=30, N=Math.round(D*FPS), ease=gsap.parseEase("sine.inOut");
+    var num=document.getElementById("fnum");
+    for (var f=0; f<=N; f++){
+      var v = 87.03 + (55.10-87.03)*ease(f/N);
+      tl.set(num, {textContent: v.toFixed(2)}, S + f/FPS);
+    }
+    tl.to(num, {color:"#ff5b4d", duration:0.8}, S+0.3);
+    // mark the failing chips (12 of 24 failed → paint ~12 red, deterministic pick)
+    var badIdx=[0,2,5,7,9,11,13,15,17,19,21,23];
+    badIdx.forEach(function(bi,k){
+      var c=chips[bi]; var t=S+1.0+k*0.09;
+      tl.set(c, {className:"+=chip lit bad"+(c.className.match(/hold/)?" hold":"")}, t);
+    });
+    tl.set("#strike", {scaleX:0}, 0);
+    tl.to("#strike", {scaleX:1, duration:0.35, ease:"power4.in"}, 7.6);
+    tl.to("#strike-card", {opacity:0.55, duration:0.4}, 7.9);
+    tl.fromTo("#stamp", {opacity:0,scale:1.7},{opacity:1,scale:1,duration:0.22,ease:"power4.in"}, 8.4);
+    tl.to("#stamp", {scale:1.04, duration:0.12, ease:"power2.out"}, 8.62);
+    tl.to("#stamp", {scale:1.0, duration:0.12, ease:"power2.out"}, 8.74);
+    tl.seek(0);
+    window.__timelines = window.__timelines || {};
+    window.__timelines["s04-break"] = tl;
+  </script>
+</div>
+</template>
+</body>
+</html>

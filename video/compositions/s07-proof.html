@@ -1,0 +1,74 @@
+<html lang="en">
+<body>
+<template>
+<div id="root" data-composition-id="s07-proof" data-duration="9.2" data-fps="30">
+  <style>
+    #root {
+      position: absolute; inset: 0; overflow: hidden;
+      background: transparent; color: #e6ede8;
+      font-family: "JetBrains Mono", monospace;
+    }
+    #term {
+      position: absolute; left: 50%; top: 200px; margin-left: -640px; width: 1280px;
+      background: #12181d; border: 1px solid #243330; border-radius: 12px;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.45); overflow: hidden;
+    }
+    .bar {
+      padding: 14px 24px; border-bottom: 1px solid #243330;
+      font-size: 20px; color: #7d8f8a;
+    }
+    .bar b { color: #e6ede8; }
+    .body { padding: 28px 36px 34px; font-size: 28px; line-height: 1.8; }
+    .pr { color: #57e6c9; font-weight: 700; }
+    .dim { color: #7d8f8a; }
+    .ok { color: #57e6c9; }
+    .caret { display: inline-block; width: 11px; height: 24px; background: #57e6c9; vertical-align: -3px; }
+    #side {
+      position: absolute; left: 50%; top: 720px; margin-left: -640px; width: 1280px;
+      display: flex; justify-content: space-between; font-size: 28px; color: #7d8f8a;
+    }
+    #side b { color: #57e6c9; }
+  </style>
+
+  <div class="clip" id="s07-stage" data-start="0" data-duration="9.2">
+    <div id="term">
+      <div class="bar" data-layout-ignore><b>skill_mode: "git"</b> · run 09 session export</div>
+      <div class="body">
+        <span class="pr">$</span> <span id="cmd"></span><span class="caret" id="car"></span>
+        <div class="dim" id="p1" style="opacity:0">sandbox.created · cloned at pinned commit <b>c10f24f</b></div>
+        <div id="p2" style="opacity:0"><span class="pr">$</span> cat skills/pm25-strategy/SKILL.md</div>
+        <div class="ok" id="p3" style="opacity:0">estimate = pm25_model × uplift + no2_model × traffic</div>
+        <div class="dim" id="p4" style="opacity:0">session 01m6pytz6ee504w53cvadb2n94 · agent reads its own playbook from the clone</div>
+      </div>
+    </div>
+    <div id="side">
+      <div>every run = a real <b>TrueForge session</b></div>
+      <div>pinned to a commit <b>the agent wrote</b></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    var tl = gsap.timeline({ paused: true });
+    tl.fromTo("#term", {opacity:0,y:26},{opacity:1,y:0,duration:0.5,ease:"power3.out"}, 0.2);
+    var CMD = "git clone github.com/udirobert/aeroloop";
+    var cmdEl = document.getElementById("cmd");
+    var T0 = 0.9, PER = 0.04;
+    for (var i = 0; i <= CMD.length; i++) {
+      tl.set(cmdEl, {textContent: CMD.slice(0, i)}, T0 + i * PER);
+    }
+    var pt = T0 + CMD.length * PER + 0.4;
+    tl.to("#car", {opacity:0, duration:0.3, repeat:3, yoyo:true}, pt - 0.25);
+    tl.to("#p1", {opacity:1, duration:0.25}, pt);
+    tl.to("#p2", {opacity:1, duration:0.25}, pt + 0.8);
+    tl.to("#p3", {opacity:1, duration:0.25}, pt + 1.5);
+    tl.to("#p4", {opacity:1, duration:0.25}, pt + 2.2);
+    tl.fromTo("#side", {opacity:0},{opacity:1,duration:0.5}, pt + 3.0);
+    tl.seek(0);
+    window.__timelines = window.__timelines || {};
+    window.__timelines["s07-proof"] = tl;
+  </script>
+</div>
+</template>
+</body>
+</html>

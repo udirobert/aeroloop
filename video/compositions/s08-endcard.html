@@ -1,0 +1,56 @@
+<html lang="en">
+<body>
+<template>
+<div id="root" data-composition-id="s08-endcard" data-duration="8.8" data-fps="30">
+  <style>
+    #root {
+      position: absolute; inset: 0; overflow: hidden;
+      background: transparent; color: #e6ede8;
+      font-family: "JetBrains Mono", monospace;
+    }
+    #wisp { position: absolute; left: 50%; top: 340px; margin-left: -420px; }
+    #mark {
+      position: absolute; top: 420px; left: 0; right: 0; text-align: center;
+      font-family: "Inter", sans-serif; font-weight: 900; font-size: 170px;
+      letter-spacing: -0.03em; color: #e6ede8;
+    }
+    #mark .g { color: #57e6c9; }
+    #url {
+      position: absolute; top: 640px; left: 0; right: 0; text-align: center;
+      font-size: 32px; color: #57e6c9; opacity: 0; letter-spacing: 0.02em;
+    }
+    #sub {
+      position: absolute; top: 700px; left: 0; right: 0; text-align: center;
+      font-size: 28px; color: #7d8f8a; letter-spacing: 0.12em; opacity: 0;
+    }
+  </style>
+
+  <div class="clip" id="s08-stage" data-start="0" data-duration="8.8">
+    <svg id="wisp" width="840" height="70" viewBox="0 0 840 70" fill="none">
+      <path id="wp" d="M8 50 C 120 10, 200 66, 320 34 S 520 8, 640 40 S 790 58, 832 26"
+        stroke="#57e6c9" stroke-width="3" stroke-linecap="round"/>
+    </svg>
+    <div id="mark">Aero<span class="g">Loop</span></div>
+    <div id="url">github.com/udirobert/aeroloop</div>
+    <div id="sub">STRANGER BUILDS · TRUEFORGE CHALLENGE</div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    var tl = gsap.timeline({ paused: true });
+    var path = document.getElementById("wp");
+    var len = path.getTotalLength();
+    path.style.strokeDasharray = len;
+    path.style.strokeDashoffset = len;
+    tl.to(path, {strokeDashoffset: 0, duration: 1.6, ease: "power2.inOut"}, 0.3);
+    tl.fromTo("#mark", {opacity:0,y:26,scale:1.02},{opacity:1,y:0,scale:1,duration:0.8,ease:"power3.out"}, 1.5);
+    tl.fromTo("#url", {opacity:0,y:12},{opacity:1,y:0,duration:0.5,ease:"power3.out"}, 2.9);
+    tl.to("#sub", {opacity:1, duration:0.5}, 3.5);
+    tl.seek(0);
+    window.__timelines = window.__timelines || {};
+    window.__timelines["s08-endcard"] = tl;
+  </script>
+</div>
+</template>
+</body>
+</html>

@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      :root {
+        --ground: #0e1216;
+        --ink: #e6ede8;
+        --accent: #57e6c9;
+        --fail: #ff5b4d;
+        --dim: #7d8f8a;
+        --mono: "JetBrains Mono", monospace;
+        --disp: "Inter", sans-serif;
+      }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body {
+        width: 1920px; height: 1080px; overflow: hidden; background: var(--ground);
+      }
+      #root {
+        position: relative; width: 1920px; height: 1080px;
+        font-family: var(--mono); color: var(--ink);
+      }
+      /* ledger ground: faint horizontal rules + static grain */
+      #ledger {
+        position: absolute; inset: 0; pointer-events: none;
+        background-image: repeating-linear-gradient(
+          0deg, rgba(230,237,232,0.028) 0px, rgba(230,237,232,0.028) 1px,
+          transparent 1px, transparent 8px);
+      }
+      #grain {
+        position: absolute; inset: 0; pointer-events: none; opacity: 0.05;
+        z-index: 60;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E");
+      }
+      /* captions */
+      #captions {
+        position: absolute; inset: 0; pointer-events: none; z-index: 50;
+      }
+      .cap {
+        position: absolute; left: 0; right: 0; bottom: 96px;
+        display: flex; justify-content: center;
+      }
+      .cap-in {
+        font-family: var(--mono); font-size: 28px; font-weight: 500;
+        color: var(--ink); letter-spacing: 0.01em;
+        background: rgba(10,14,17,0.82);
+        padding: 8px 20px; border-radius: 6px;
+        border-left: 3px solid var(--accent);
+      }
+      audio { display: none; }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="84"
+      data-width="1920"
+      data-height="1080"
+    >
+      <div id="ledger" data-layout-ignore></div>
+
+      <div
+        class="clip"
+        id="host-s01-hook"
+        data-composition-src="compositions/s01-hook.html"
+        data-composition-id="s01-hook"
+        data-start="0"
+        data-duration="10.2"
+        data-track-index="0"
+        data-track-kind="graphics"
+      ></div>
+      <div
+        class="clip"
+        id="host-s02-system"
+        data-composition-src="compositions/s02-system.html"
+        data-composition-id="s02-system"
+        data-start="10.2"
+        data-duration="14.2"
+        data-track-index="0"
+        data-track-kind="graphics"
+      ></div>
+      <div
+        class="clip"
+        id="host-s03-rule"
+        data-composition-src="compositions/s03-rule.html"
+        data-composition-id="s03-rule"
+        data-start="24.4"
+        data-duration="10.0"
+        data-track-index="0"
+        data-track-kind="graphics"
+      ></div>
+      <div
+        class="clip"
+        id="host-s04-break"
+        data-composition-src="compositions/s04-break.html"
+        data-composition-id="s04-break"
+        data-start="34.4"
+        data-duration="10.4"
+        data-track-index="0"
+        data-track-kind="graphics"
+      ></div>
+      <div
+        class="clip"
+        id="host-s05-learn"
+        data-composition-src="compositions/s05-learn.html"
+        data-composition-id="s05-learn"
+        data-start="44.8"
+        data-duration="15.6"
+        data-track-index="0"
+        data-track-kind="graphics"
+      ></div>
+      <div
+        class="clip"
+        id="host-s06-recovery"
+        data-composition-src="compositions/s06-recovery.html"
+        data-composition-id="s06-recovery"
+        data-start="60.4"
+        data-duration="5.6"
+        data-track-index="0"
+        data-track-kind="graphics"
+      ></div>
+      <div
+        class="clip"
+        id="host-s07-proof"
+        data-composition-src="compositions/s07-proof.html"
+        data-composition-id="s07-proof"
+        data-start="66.0"
+        data-duration="9.2"
+        data-track-index="0"
+        data-track-kind="graphics"
+      ></div>
+      <div
+        class="clip"
+        id="host-s08-endcard"
+        data-composition-src="compositions/s08-endcard.html"
+        data-composition-id="s08-endcard"
+        data-start="75.2"
+        data-duration="8.8"
+        data-track-index="0"
+        data-track-kind="graphics"
+      ></div>
+
+      <div id="captions" data-track-kind="captions" data-layout-ignore>
+        <div class="clip cap" id="cap-01" data-start="0.00" data-duration="2.67"><span class="cap-in">In a challenge called &quot;an agent that gets</span></div>
+        <div class="clip cap" id="cap-02" data-start="2.40" data-duration="2.67"><span class="cap-in">better every time it runs&quot;, every</span></div>
+        <div class="clip cap" id="cap-03" data-start="4.80" data-duration="2.59"><span class="cap-in">submission shows a number going up.</span></div>
+        <div class="clip cap" id="cap-04" data-start="7.36" data-duration="2.91"><span class="cap-in">This is the run where ours went down.</span></div>
+        <div class="clip cap" id="cap-05" data-start="10.24" data-duration="3.07"><span class="cap-in">AeroLoop forecasts London PM two point</span></div>
+        <div class="clip cap" id="cap-06" data-start="13.16" data-duration="1.03"><span class="cap-in">five.</span></div>
+        <div class="clip cap" id="cap-07" data-start="13.92" data-duration="2.27"><span class="cap-in">It scores itself against real ground</span></div>
+        <div class="clip cap" id="cap-08" data-start="15.92" data-duration="1.26"><span class="cap-in">monitors —</span></div>
+        <div class="clip cap" id="cap-09" data-start="16.85" data-duration="2.54"><span class="cap-in">and between runs, it rewrites its own</span></div>
+        <div class="clip cap" id="cap-10" data-start="19.12" data-duration="1.15"><span class="cap-in">playbook.</span></div>
+        <div class="clip cap" id="cap-11" data-start="20.16" data-duration="2.27"><span class="cap-in">The skill file lives in git.</span></div>
+        <div class="clip cap" id="cap-12" data-start="22.32" data-duration="2.35"><span class="cap-in">The agent writes the commits.</span></div>
+        <div class="clip cap" id="cap-13" data-start="24.64" data-duration="2.43"><span class="cap-in">On eight tasks it learned the satellite</span></div>
+        <div class="clip cap" id="cap-14" data-start="26.80" data-duration="2.67"><span class="cap-in">model under-reads the street, and settled</span></div>
+        <div class="clip cap" id="cap-15" data-start="29.20" data-duration="3.79"><span class="cap-in">on one rule: multiply by one point two.</span></div>
+        <div class="clip cap" id="cap-16" data-start="32.72" data-duration="2.19"><span class="cap-in">It scored eighty-seven.</span></div>
+        <div class="clip cap" id="cap-17" data-start="34.64" data-duration="2.51"><span class="cap-in">So we froze the playbook and showed it</span></div>
+        <div class="clip cap" id="cap-18" data-start="36.88" data-duration="3.07"><span class="cap-in">twenty-four forecasts it had never seen.</span></div>
+        <div class="clip cap" id="cap-19" data-start="39.76" data-duration="2.19"><span class="cap-in">It scored fifty-five.</span></div>
+        <div class="clip cap" id="cap-20" data-start="41.68" data-duration="2.27"><span class="cap-in">The rule that looked learned was just</span></div>
+        <div class="clip cap" id="cap-21" data-start="43.76" data-duration="1.39"><span class="cap-in">overfit.</span></div>
+        <div class="clip cap" id="cap-22" data-start="44.96" data-duration="2.19"><span class="cap-in">Then the agent did the thing the challenge</span></div>
+        <div class="clip cap" id="cap-23" data-start="46.92" data-duration="1.75"><span class="cap-in">is actually about.</span></div>
+        <div class="clip cap" id="cap-24" data-start="48.48" data-duration="2.83"><span class="cap-in">It read its own failures, diagnosed the</span></div>
+        <div class="clip cap" id="cap-25" data-start="51.12" data-duration="3.03"><span class="cap-in">broken rule, and rewrote its strategy —</span></div>
+        <div class="clip cap" id="cap-26" data-start="53.84" data-duration="3.31"><span class="cap-in">per-station uplifts, a traffic term, a</span></div>
+        <div class="clip cap" id="cap-27" data-start="56.88" data-duration="1.55"><span class="cap-in">wind correction.</span></div>
+        <div class="clip cap" id="cap-28" data-start="58.40" data-duration="1.95"><span class="cap-in">Nobody wrote that fix for it.</span></div>
+        <div class="clip cap" id="cap-29" data-start="60.64" data-duration="3.15"><span class="cap-in">Next run: sixty-three point six.</span></div>
+        <div class="clip cap" id="cap-30" data-start="63.52" data-duration="2.75"><span class="cap-in">On tasks it never tuned against.</span></div>
+        <div class="clip cap" id="cap-31" data-start="66.24" data-duration="2.99"><span class="cap-in">Every run is a real TrueForge session,</span></div>
+        <div class="clip cap" id="cap-32" data-start="68.96" data-duration="2.27"><span class="cap-in">pinned to a commit the agent wrote.</span></div>
+        <div class="clip cap" id="cap-33" data-start="71.44" data-duration="2.43"><span class="cap-in">The playbook it edits is cloned from the</span></div>
+        <div class="clip cap" id="cap-34" data-start="73.60" data-duration="1.75"><span class="cap-in">repo it ships in.</span></div>
+        <div class="clip cap" id="cap-35" data-start="75.36" data-duration="1.19"><span class="cap-in">AeroLoop.</span></div>
+        <div class="clip cap" id="cap-36" data-start="76.40" data-duration="2.59"><span class="cap-in">An agent that gets better every time it</span></div>
+        <div class="clip cap" id="cap-37" data-start="78.84" data-duration="0.79"><span class="cap-in">runs.</span></div>
+        <div class="clip cap" id="cap-38" data-start="79.52" data-duration="2.03"><span class="cap-in">Including the times it doesn&#x27;t.</span></div>
+      </div>
+
+      <div id="grain" data-layout-ignore></div>
+
+      <audio id="vo" src="assets/vo.mp3" data-start="0" data-duration="81.12" data-volume="1"></audio>
+      <audio id="music" src="assets/music.wav" data-start="0" data-duration="84" data-volume="0.34"></audio>
+    </div>
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+      document.querySelectorAll(".cap").forEach(function (cap) {
+        const inner = cap.querySelector(".cap-in");
+        const start = parseFloat(cap.dataset.start);
+        tl.fromTo(
+          inner,
+          { opacity: 0, y: 10 },
+          { opacity: 1, y: 0, duration: 0.22, ease: "power2.out" },
+          start + 0.06
+        );
+      });
+      window.__timelines["main"] = tl;
+      tl.seek(0);
+    </script>
+  </body>
+</html>
