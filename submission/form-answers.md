@@ -10,7 +10,7 @@ Form: https://www.openserv.ai/hackathon-2 (submission closes 2026-11-15 23:59 UT
 
 **Demo link or video:** https://youtu.be/LqHMPDhwT1o
 
-**X post link:** _(paste the URL of the posted main tweet from `x-post.md`)_
+**X post link:** https://x.com/papajimjams/status/2122102282497962236
 
 **Short write-up:**
 
