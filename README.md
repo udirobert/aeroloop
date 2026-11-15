@@ -94,6 +94,19 @@ at `docs/ghost-film.mp4` / `.gif`), or `http://localhost:8000/docs`.
 truth across all 4 stations, fully offline. Then `POST /self-improve` runs the
 whole analyse → propose → holdout-evaluate → keep/reject loop.
 
+**Reference data tooling (Milestone 2):**
+
+```bash
+DATABASE_PATH=../data/x.db python reference_sites.py --start YYYY-MM-DD --end YYYY-MM-DD  # probe every LAQN site, keep ≥75% coverage
+DATABASE_PATH=../data/x.db python backfill_laqn.py --all-qualifying --start .. --end ..   # multi-site hindcast (laqn:CODE stations)
+DATABASE_PATH=../data/x.db python colocation.py --refresh                                # sensor listings + co-location tiers
+DATABASE_PATH=../data/x.db python score_real_audit.py --out out.json                     # per-site + overall holdout scores
+```
+
+Endpoints: `GET /reference-sites`, `GET /trust?subject=cams_raw|incumbent`,
+`GET /colocation?species=PM25`. Trust scores apply the US EPA 2021 PM2.5
+24-hour performance targets as an **indicative comparison, not certification**.
+
 ## Architecture
 
 ```
@@ -199,7 +212,13 @@ in [`docs/vision.md`](docs/vision.md#roadmap).
   tested (Reppo not yet exercised against the live API — needs `REPPO_API_KEY`).
 - Prediction hashes, Merkle batches and OpenTimestamps stamping: working; Base
   anchoring built and tested against a mocked node, not yet sent on-chain.
-- Next: Milestone 2 — more reference sites, Breathe London sensors, trust map.
+- Milestone 2a: 26 reference sites qualified by probing data, a 40-day
+  multi-site hindcast (22,309 pairs), and a trust engine scoring against US EPA
+  24-hour targets (indicative). First finding: raw CAMS is unfit at all 26
+  sites — it under-responds by roughly half — and the current offset-only
+  correction can't fix that (`submission/evidence/real-audit-multisite.json`).
+- Next: add a scale term to the strategy, Breathe London sensors (needs a key),
+  sensor trust tiers and the trust map.
 
 ## Run 1 vs run N
 

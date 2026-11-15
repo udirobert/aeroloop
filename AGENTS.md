@@ -26,6 +26,13 @@ When changing product, demo or docs, check the change against the vision:
   is publicly proven. Never describe `hindcast` or `simulated` rows as pre-truth.
 - Comparisons to EU directive uncertainty limits are labelled *indicative* unless
   computed by the formal method; we do not issue MCERTS/CEN classifications.
+- Reference sites qualify by probing their data (≥75% of hours), never by LAQN
+  metadata, which is wrong in both directions.
+- Anything that returns or displays Breathe London data must carry: "Contains
+  Breathe London data licensed under the Open Government License v3.0" linking
+  https://www.breathelondon.org/ (OGL v3).
+- Trust statuses compare against US EPA 24-hour targets and are indicative, not
+  certification; the drift flag is an AeroLoop heuristic.
 - Market numbers in docs must trace to a source in the research report; label
   hypotheses (e.g. pricing) as hypotheses.
 

@@ -116,6 +116,39 @@ def init_db() -> None:
             base_error TEXT,
             ots_error TEXT
         );
+        CREATE TABLE IF NOT EXISTS reference_sites (
+            code TEXT NOT NULL,
+            species TEXT NOT NULL,
+            name TEXT,
+            lat REAL,
+            lon REAL,
+            network TEXT NOT NULL DEFAULT 'LAQN',
+            valid_hours INTEGER,
+            expected_hours INTEGER,
+            coverage REAL,
+            window_start TEXT,
+            window_end TEXT,
+            probed_at TEXT,
+            qualifies INTEGER,
+            PRIMARY KEY (code, species)
+        );
+        CREATE TABLE IF NOT EXISTS sensors (
+            uid TEXT PRIMARY KEY,
+            source TEXT NOT NULL,
+            lat REAL,
+            lon REAL,
+            indoor INTEGER NOT NULL DEFAULT 0,
+            meta TEXT,
+            listed_at TEXT
+        );
+        CREATE TABLE IF NOT EXISTS sensor_readings (
+            uid TEXT NOT NULL,
+            timestamp TEXT NOT NULL,
+            species TEXT NOT NULL,
+            value REAL,
+            flags TEXT,
+            PRIMARY KEY (uid, timestamp, species)
+        );
         """
     )
     cols = {r["name"] for r in c.execute("PRAGMA table_info(proposals)")}
@@ -512,3 +545,98 @@ def update_anchor(anchor_id: int, **fields: Any) -> None:
     c.execute(f"UPDATE anchors SET {', '.join(sets)} WHERE id=?", (*vals, anchor_id))
     c.commit()
     c.close()
+
+
+def upsert_reference_site(s: Dict[str, Any]) -> None:
+    c = _conn()
+    c.execute(
+        """INSERT OR REPLACE INTO reference_sites
+           (code, species, name, lat, lon, network, valid_hours, expected_hours,
+            coverage, window_start, window_end, probed_at, qualifies)
+           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+        (s["code"], s["species"], s.get("name"), s.get("lat"), s.get("lon"),
+         s.get("network", "LAQN"), s.get("valid_hours"), s.get("expected_hours"),
+         s.get("coverage"), s.get("window_start"), s.get("window_end"),
+         s.get("probed_at"), int(bool(s.get("qualifies")))),
+    )
+    c.commit()
+    c.close()
+
+
+def get_reference_sites(species: Optional[str] = None,
+                        qualifying: Optional[bool] = None
+                        ) -> List[Dict[str, Any]]:
+    q = "SELECT * FROM reference_sites WHERE 1=1"
+    args: list = []
+    if species:
+        q += " AND species=?"
+        args.append(species)
+    if qualifying is not None:
+        q += " AND qualifies=?"
+        args.append(1 if qualifying else 0)
+    q += " ORDER BY code"
+    c = _conn()
+    rows = c.execute(q, args).fetchall()
+    c.close()
+    return [dict(r) for r in rows]
+
+
+def upsert_sensor(s: Dict[str, Any]) -> None:
+    c = _conn()
+    c.execute(
+        """INSERT OR REPLACE INTO sensors (uid, source, lat, lon, indoor, meta,
+           listed_at) VALUES (?,?,?,?,?,?,?)""",
+        (s["uid"], s["source"], s.get("lat"), s.get("lon"),
+         int(bool(s.get("indoor"))), json.dumps(s.get("meta") or {}),
+         s.get("listed_at")),
+    )
+    c.commit()
+    c.close()
+
+
+def get_sensors(source: Optional[str] = None) -> List[Dict[str, Any]]:
+    c = _conn()
+    if source:
+        rows = c.execute("SELECT * FROM sensors WHERE source=?", (source,)).fetchall()
+    else:
+        rows = c.execute("SELECT * FROM sensors").fetchall()
+    c.close()
+    out = []
+    for r in rows:
+        d = dict(r)
+        d["meta"] = json.loads(d["meta"]) if d.get("meta") else {}
+        out.append(d)
+    return out
+
+
+def save_sensor_reading(uid: str, timestamp: str, species: str,
+                        value: Optional[float], flags: Dict[str, Any]) -> None:
+    c = _conn()
+    c.execute(
+        """INSERT OR REPLACE INTO sensor_readings (uid, timestamp, species,
+           value, flags) VALUES (?,?,?,?,?)""",
+        (uid, timestamp, species, value, json.dumps(flags)),
+    )
+    c.commit()
+    c.close()
+
+
+def get_sensor_readings(uid: Optional[str] = None,
+                        species: Optional[str] = None) -> List[Dict[str, Any]]:
+    q = "SELECT * FROM sensor_readings WHERE 1=1"
+    args: list = []
+    if uid:
+        q += " AND uid=?"
+        args.append(uid)
+    if species:
+        q += " AND species=?"
+        args.append(species)
+    c = _conn()
+    rows = c.execute(q, args).fetchall()
+    c.close()
+    out = []
+    for r in rows:
+        d = dict(r)
+        d["flags"] = json.loads(d["flags"]) if d.get("flags") else {}
+        out.append(d)
+    return out

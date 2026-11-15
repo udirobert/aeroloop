@@ -41,22 +41,22 @@ LAQN_SITES = {
 LAQN_MIN_LAG_DAYS = 5  # readings younger than this are unlikely to be published
 
 
-async def fetch_laqn_pm25(site_code: str, start: datetime, end: datetime) -> Dict[str, float]:
-    """Hourly PM2.5 readings (µg/m³) for a LAQN site over [start, end].
+async def fetch_laqn_species(site_code: str, species: str,
+                             start: datetime, end: datetime) -> Dict[str, float]:
+    """Hourly readings (µg/m³) for a LAQN site+species over [start, end].
 
-    Returns {iso_hour: value}. Empty when the site doesn't measure PM2.5 or
-    the readings aren't published yet (LAQN ratification lag).
+    Uses the SiteSpecies endpoint; returns {"YYYY-MM-DD HH:00:00": value} for
+    hours with a valid @Value (empty values are gaps in the record).
     """
-    url = (f"{LAQN_URL}/Data/Site/SiteCode={site_code}"
+    url = (f"{LAQN_URL}/Data/SiteSpecies/SiteCode={site_code}"
+           f"/SpeciesCode={species}"
            f"/StartDate={start:%Y-%m-%d}/EndDate={end:%Y-%m-%d}/Json")
     async with httpx.AsyncClient(timeout=30) as client:
         r = await client.get(url)
         r.raise_for_status()
         d = r.json()
     out: Dict[str, float] = {}
-    for row in d.get("AirQualityData", {}).get("Data", []) or []:
-        if row.get("@SpeciesCode") != "PM25":
-            continue
+    for row in d.get("RawAQData", {}).get("Data", []) or []:
         v = row.get("@Value")
         t = row.get("@MeasurementDateGMT")
         if v in (None, "") or not t:
@@ -65,6 +65,39 @@ async def fetch_laqn_pm25(site_code: str, start: datetime, end: datetime) -> Dic
             out[t] = float(v)
         except ValueError:
             pass
+    return out
+
+
+async def fetch_laqn_pm25(site_code: str, start: datetime, end: datetime) -> Dict[str, float]:
+    """Hourly PM2.5 readings (µg/m³) for a LAQN site over [start, end].
+
+    Returns {iso_hour: value}. Empty when the site doesn't measure PM2.5 or
+    the readings aren't published yet (LAQN ratification lag).
+    """
+    return await fetch_laqn_species(site_code, "PM25", start, end)
+
+
+async def fetch_laqn_sites() -> list:
+    """All London-group monitoring sites with species metadata (unreliable —
+    qualify empirically via fetch_laqn_species, not this listing)."""
+    url = f"{LAQN_URL}/Information/MonitoringSiteSpecies/GroupName=London/Json"
+    async with httpx.AsyncClient(timeout=30) as client:
+        r = await client.get(url)
+        r.raise_for_status()
+        d = r.json()
+    out = []
+    for s in d.get("Sites", {}).get("Site", []) or []:
+        species = s.get("Species", [])
+        if isinstance(species, dict):
+            species = [species]
+        out.append({
+            "code": s.get("@SiteCode"),
+            "name": s.get("@SiteName"),
+            "lat": float(s.get("@Latitude") or 0),
+            "lon": float(s.get("@Longitude") or 0),
+            "date_closed": s.get("@DateClosed") or None,
+            "species": [sp.get("@SpeciesCode") for sp in species],
+        })
     return out
 
 

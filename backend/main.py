@@ -21,11 +21,13 @@ from pydantic import BaseModel
 
 import agent
 import base_anchor
+import colocation
 import commitments
 import data_sources
 import db
 import evaluation
 import prediction
+import trust
 from models import ErrorRecord, GroundReading, Prediction, Strategy
 
 app = FastAPI(title="AeroLoop", version="0.1.0")
@@ -74,7 +76,7 @@ def _run_strategy(kind: str, params: Dict[str, Any], features: Dict[str, Any]) -
 
 def _matched_pairs() -> List[Dict[str, Any]]:
     """Prediction/reading pairs: features + the actual that arrived later."""
-    readings = {(r["station_id"], r["timestamp"]): r["measured_pm25"] for r in db.get_readings()}
+    readings = {(r["station_id"], r["timestamp"]): r for r in db.get_readings()}
     pairs = []
     for p in db.get_predictions():
         key = (p["station_id"], p["timestamp"])
@@ -83,7 +85,8 @@ def _matched_pairs() -> List[Dict[str, Any]]:
                 "station_id": p["station_id"],
                 "timestamp": p["timestamp"],
                 "inputs": json.loads(p["inputs"]),
-                "actual": readings[key],
+                "actual": readings[key]["measured_pm25"],
+                "source": readings[key].get("source", "unknown"),
             })
     return pairs
 
@@ -167,6 +170,7 @@ def evaluate(strategy_version: str = "latest"):
     ]
     result = evaluation.evaluate(norm, readings)
     result["strategy_version"] = strategy_version
+    result["truth_sources"] = sorted({m["source"] for m in pairs})
     return result
 
 
@@ -304,6 +308,25 @@ def demo_day(hours: int = 24):
 @app.get("/strategies")
 def strategies():
     return db.get_strategies()
+
+
+@app.get("/reference-sites")
+def reference_sites(species: Optional[str] = None,
+                    qualifying: Optional[bool] = None):
+    return db.get_reference_sites(species=species, qualifying=qualifying)
+
+
+@app.get("/trust")
+def trust_report(subject: str = "cams_raw"):
+    try:
+        return trust.trust_report(subject)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+
+
+@app.get("/colocation")
+def colocation_report(species: str = "PM25"):
+    return colocation.colocation_report(species)
 
 
 @app.get("/errors")

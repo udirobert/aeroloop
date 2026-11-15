@@ -70,7 +70,7 @@
         <button class="primary" onclick="selfImprove()">Self-Improve</button>
       </div>
       <div id="status">Click “Simulate 24h” to give the agent a day of memories, then “Self-Improve”.</div>
-      <div class="hint">Ground truth here is a deterministic synthetic stand-in for DEFRA AURN — flagged as such in the DB.</div>
+      <div class="hint" id="truthHint">Ground truth source is labelled per reading in the DB.</div>
     </div>
     <div class="card">
       <h2>Evaluation — <span id="evalStrategy">latest</span></h2>
@@ -120,6 +120,21 @@
         <tbody id="anchorsTable"><tr><td colspan="5" style="color:#6b7386">—</td></tr></tbody>
       </table>
     </div>
+    <div class="card">
+      <h2>Trust (reference sites) <span style="color:#6b7386;font-weight:400;text-transform:none">— indicative EPA-target comparison on 24-h means, not certification</span></h2>
+      <div class="controls">
+        <label>Subject</label>
+        <select id="trustSubject" onchange="loadTrust()" style="background:#151c2e;color:#dfe6f3;border:1px solid #3b4a6b;padding:7px 10px;border-radius:7px;font-size:13px">
+          <option value="cams_raw">cams_raw</option>
+          <option value="incumbent">incumbent (holdout only)</option>
+        </select>
+      </div>
+      <table style="margin-top:10px">
+        <thead><tr><th>Site</th><th>Status</th><th>Days</th><th>R²</th><th>Slope</th><th>Intercept</th><th>RMSE</th><th>NRMSE</th><th>Drift</th></tr></thead>
+        <tbody id="trustTable"><tr><td colspan="9" style="color:#6b7386">—</td></tr></tbody>
+      </table>
+      <div class="hint" id="trustNote" style="margin-top:8px"></div>
+    </div>
   </main>
   <script>
     const API = '';
@@ -129,6 +144,16 @@
       const strat = document.getElementById('strategy').value;
       const d = await (await fetch(API + '/evaluate?strategy_version=' + strat)).json();
       document.getElementById('evalStrategy').textContent = strat;
+      const srcs = d.truth_sources || [];
+      const real = srcs.filter(s => /LAQN|ratified/i.test(s));
+      const syn = srcs.filter(s => /synthetic/i.test(s));
+      document.getElementById('truthHint').textContent = !srcs.length
+        ? 'No ground truth yet.'
+        : real.length && !syn.length
+          ? `Ground truth: ${real.join(' · ')} — real reference monitors, labelled per reading in the DB.`
+          : syn.length && !real.length
+            ? 'Ground truth here is a deterministic synthetic stand-in for DEFRA AURN — flagged as such in the DB.'
+            : `Mixed truth sources, each labelled per reading in the DB: ${srcs.join(' · ')}`;
       document.getElementById('metrics').innerHTML = d.n === 0
         ? '<span style="color:#6b7386">No matched pairs yet.</span>'
         : `<span class="metric"><div class="val">${d.mae}</div><div class="lbl">MAE</div></span>
@@ -138,6 +163,7 @@
       drawChart();
       loadStrategies();
       loadAnchors();
+      loadTrust();
     }
 
     async function demoDay() {
@@ -260,6 +286,23 @@
         <td>${a.ots_status || '—'}</td>
         <td>${a.base_tx ? `<a href="https://${a.base_chain_id === 84532 ? 'sepolia.' : ''}basescan.org/tx/${a.base_tx}" style="color:#a78bfa">${a.base_status || 'submitted'}</a>` : (a.base_status || '—')}</td>
         </tr>`).join('') : '<tr><td colspan="5" style="color:#6b7386">No anchors yet.</td></tr>';
+    }
+
+    async function loadTrust() {
+      const subject = document.getElementById('trustSubject').value;
+      const d = await (await fetch(API + '/trust?subject=' + subject)).json();
+      const f = v => v === null || v === undefined ? '—' : (+v).toFixed(3);
+      const rows = Object.entries(d.sites || {});
+      document.getElementById('trustTable').innerHTML = rows.length ? rows.map(([site, s]) => `
+        <tr><td><code>${site}</code></td>
+        <td><span class="badge ${s.status === 'fit' ? 'kept' : 'rejected'}">${s.status}</span></td>
+        <td>${s.n_days}</td><td>${f(s.daily && s.daily.r2)}</td>
+        <td>${f(s.daily && s.daily.slope)}</td><td>${f(s.daily && s.daily.intercept)}</td>
+        <td>${f(s.daily && s.daily.rmse)}</td><td>${f(s.daily && s.daily.nrmse)}</td>
+        <td>${s.drift && s.drift.drift_flag ? 'yes' : 'no'}</td></tr>`).join('')
+        : '<tr><td colspan="9" style="color:#6b7386">No laqn:* sites in this database.</td></tr>';
+      document.getElementById('trustNote').textContent =
+        (d.standard || '') + (d.window === 'holdout' ? ' · scored on the holdout split only' : '');
     }
 
     async function lookupCommitment() {

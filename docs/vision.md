@@ -94,13 +94,34 @@ arrives later — and certifies or pays for what holds up. Four layers:
    x402 marketplace for agents, and a monthly verification appendix for
    construction-monitoring consultancies.
 
-**Data reality (checked 2026-11-15).** Open low-cost data near London is thinner
-than it looks: sensor.community had only 20 PM sensors within 20 km of central
-London (3 indoor). The main source will be Breathe London (400+ Clarity nodes,
-open API with a key; terms of use still to check), plus PurpleAir (paid API).
-Breathe London nodes are already calibrated by their operators, so auditing them
-is an independent check of an incumbent's calibration. That is the right story,
-but it should be framed as collaboration, not a gotcha.
+**Data reality (checked 2026-11-15).**
+- *Reference monitors:* LAQN metadata is unreliable in both directions. Of 72
+  open London sites, 48 claim to measure PM2.5, but probing 1–9 Nov 2026 only
+  **26 actually published ≥75% of hours** (North Kensington KC1 qualifies
+  despite not being listed; several listed sites were empty). 32 qualify for
+  PM10. AeroLoop therefore qualifies reference sites by probing data, never by
+  metadata.
+- *Open low-cost sensors are too sparse near references:* sensor.community had
+  33 PM sensors within 40 km of central London, **none within 500 m** of a
+  qualifying reference site (closest: 560 m). An open-data-only trust map would
+  be empty.
+- *Breathe London is the main sensor source:* 400+ Clarity nodes via an API
+  that needs a key. Its data is licensed under the **UK Open Government Licence
+  v3**, which allows commercial use with attribution ("Contains Breathe London
+  data licensed under the Open Government License v3.0", linking
+  breathelondon.org). Its values are already corrected by the operators
+  (`ScaledValue`), so auditing them is an independent check of an incumbent's
+  calibration — framed as collaboration, not a gotcha.
+
+**First real finding (hindcast, 1 Oct–9 Nov 2026, 26 reference sites, 22,309
+hourly pairs).** Scored against US EPA PM2.5 sensor targets on 24-hour means
+(indicative, not certification), the raw CAMS model is **unfit at all 26
+sites**: it consistently under-responds (slope 0.43–0.65 against the 0.65–1.35
+target), with R² 0.64–0.79 and RMSE 5.5–14.7 µg/m³. The current correction
+strategy is also unfit at all 26 on held-out days, because it only adds offsets
+and cannot fix a slope problem. Evidence:
+`submission/evidence/real-audit-multisite.json`. This is the kind of honest,
+specific result the product exists to produce.
 
 ## How the product earns trust
 
@@ -147,8 +168,13 @@ credible rather than a vendor's word:
   Base anchor (no wallet yet).
 - Subject under audit: **CAMS model PM2.5** at four London stations — not yet
   low-cost sensor feeds, and not yet PM10.
-- Real reference truth: LAQN for north_kensington (KC1), including a 192-hour
-  ratified hindcast. Other stations use a labelled synthetic stand-in.
+- Real reference truth: 26 LAQN sites qualified empirically, with a 40-day
+  multi-site hindcast (22,309 pairs). The original four demo stations still use
+  a labelled synthetic stand-in except KC1.
+- **Milestone 2a built:** reference-site discovery, multi-site hindcast, a
+  subject-agnostic trust engine (EPA 24-hour targets plus an AeroLoop drift
+  heuristic), Breathe London and sensor.community adapters, and co-location
+  tiers. Not yet live: Breathe London (no API key yet).
 - Known limits: SERV cannot be switched off on its endpoint, so there is no
   like-for-like "same model without SERV" arm yet; repeated tournaments on the
   same history slowly tune to the holdout (live mode will fix this); TabPFN's
@@ -169,7 +195,7 @@ credible rather than a vendor's word:
 - Remaining: first live Reppo verdict and first on-chain Base anchor; live mode
   (proposals committed now, scored on future truth).
 
-**Milestone 2 — Real sensors and the trust map**
+**Milestone 2 — Real sensors and the trust map** (2a built 2026-11-15: reference discovery, multi-site hindcast, trust engine, adapters, co-location)
 - Ingest Breathe London (and PurpleAir where affordable) plus LAQN/AURN
   reference sites beyond North Kensington.
 - Co-location finder (≤ 500 m), trust tiers, drift detection, PM10 and the
@@ -197,9 +223,12 @@ credible rather than a vendor's word:
 
 ## Open questions
 
-- Breathe London API terms: is commercial use and redistribution of derived
-  trust scores allowed?
-- How many low-cost sensors sit within ~500 m of a London reference monitor?
+- The strategy formula only adds offsets, but CAMS's main error is a slope
+  (it under-responds by roughly half). Add a scale term so proposers can fix
+  it — then re-run the tournament on the 26-site data.
+
+- How many Breathe London nodes sit within ~500 m of a qualifying reference
+  monitor? (sensor.community: none.)
 - Where to anchor prediction hashes publicly (Base, OpenTimestamps, or a public
   git log)?
 
