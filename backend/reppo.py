@@ -93,7 +93,7 @@ def run_gate(
     reppo: Dict[str, Any] = {"id": None}
     try:
         submitted = submit_eval(input_text, client=client)
-        if "error" in submitted or not submitted.get("id"):
+        if submitted.get("error") or not submitted.get("id"):
             reppo["error"] = submitted.get("error", "no eval id in response")
             return {"status": "error", "reppo": reppo}
         reppo["id"] = submitted["id"]
@@ -102,7 +102,7 @@ def run_gate(
         deadline = time.monotonic() + timeout
         while time.monotonic() < deadline:
             ev = get_eval(str(submitted["id"]), client=client)
-            if "error" in ev:
+            if ev.get("error"):
                 reppo["error"] = ev["error"]
                 return {"status": "error", "reppo": reppo}
             status = ev.get("status")

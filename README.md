@@ -208,8 +208,9 @@ in [`docs/vision.md`](docs/vision.md#roadmap).
 - Core predict → truth → score → improve loop: working since 2026-10-31.
 - Real LAQN reference truth for North Kensington (KC1); 192-hour ratified
   hindcast audit in `submission/evidence/real-audit-scores.json`.
-- Correction tournament with SERV proposers and the blind Reppo gate: built and
-  tested (Reppo not yet exercised against the live API — needs `REPPO_API_KEY`).
+- Correction tournament with SERV proposers and the blind Reppo gate: built,
+  tested, and the Reppo gate verified against the live API (verdict in ~90 s,
+  440 credits per evaluation).
 - Prediction hashes, Merkle batches and OpenTimestamps stamping: working; Base
   anchoring built and tested against a mocked node, not yet sent on-chain.
 - Milestone 2a: 26 reference sites qualified by probing data, a 40-day

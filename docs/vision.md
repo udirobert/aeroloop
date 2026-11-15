@@ -176,8 +176,8 @@ credible rather than a vendor's word:
   open-weight model, a heuristic; TabPFN as benchmark-only), holdout time
   windows, blind Reppo soundness gate, per-prediction SHA-256 commitments,
   daily Merkle batches with OpenTimestamps and Base anchoring, and a verify
-  endpoint. Not yet exercised live: the Reppo API (no key yet) and an on-chain
-  Base anchor (no wallet yet).
+  endpoint. The Reppo gate is verified live (2026-11-15); an on-chain Base anchor
+  is still pending (wallet awaiting funds).
 - Subject under audit: **CAMS model PM2.5** at four London stations — not yet
   low-cost sensor feeds, and not yet PM10.
 - Real reference truth: 26 LAQN sites qualified empirically, with a 40-day
@@ -204,7 +204,7 @@ credible rather than a vendor's word:
   score, decision, confidence and critique.
 - SHA-256 hash per prediction at save time; daily batch root anchored on
   OpenTimestamps and Base; verify endpoint.
-- Remaining: first live Reppo verdict and first on-chain Base anchor; live mode
+- Remaining: first on-chain Base anchor; live mode
   (proposals committed now, scored on future truth).
 
 **Milestone 2 — Real sensors and the trust map** (2a built 2026-11-15: reference discovery, multi-site hindcast, trust engine, adapters, co-location)

@@ -20,12 +20,12 @@ def test_queued_then_completed_accept(monkeypatch):
     def handler(req):
         if req.method == "POST":
             assert req.headers["Authorization"] == "Bearer rk"
-            return httpx.Response(201, json={"id": "e1", "status": "QUEUED"})
+            return httpx.Response(201, json={"id": "e1", "status": "QUEUED", "error": None})
         polls["n"] += 1
         if polls["n"] == 1:
-            return httpx.Response(200, json={"id": "e1", "status": "QUEUED"})
+            return httpx.Response(200, json={"id": "e1", "status": "QUEUED", "error": None})
         return httpx.Response(200, json={
-            "id": "e1", "status": "COMPLETED",
+            "id": "e1", "status": "COMPLETED", "error": None,
             "result": {"score": 82, "decision": "accept", "confidence": "high",
                        "route": "ship", "reason": "sound", "rubric_scores": {"a": 1}},
         })
