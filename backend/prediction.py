@@ -20,7 +20,10 @@ def baseline_v1(features: Dict[str, Any]) -> float:
 
 
 def improved_v2(features: Dict[str, Any], params: Dict[str, Any]) -> float:
-    """v2: model PM2.5 + weather + (optional) road-density correction.
+    """v2: scale*model PM2.5 + weather + bias correction.
+
+    pred = scale*pm25_model + humidity_coef*(humidity-50)
+         + wind_coef*(wind-5) + precip_coef*precipitation + bias
 
     params can be rewritten by the agent, e.g.:
       {"humidity_coef": -0.05, "wind_coef": -0.3, "road_coef": 1.2, "bias": 2.0}
@@ -35,9 +38,10 @@ def improved_v2(features: Dict[str, Any], params: Dict[str, Any]) -> float:
     humidity_coef = params.get("humidity_coef", -0.05)
     wind_coef = params.get("wind_coef", -0.3)
     precip_coef = params.get("precip_coef", -0.5)
+    scale = params.get("scale", 1.0)  # multiplicative term; absent = 1.0
     bias = params.get("bias", 2.0)
 
-    val = float(pm)
+    val = scale * float(pm)
     val += humidity_coef * (humidity - 50.0)
     val += wind_coef * (wind - 5.0)
     val += precip_coef * precip

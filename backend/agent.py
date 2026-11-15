@@ -56,11 +56,14 @@ def _endpoints() -> List[Tuple[str, str, str]]:
 
 # sane bounds for anything the LLM proposes
 PARAM_BOUNDS = {
+    "scale": (0.5, 3.0),
     "humidity_coef": (-0.5, 0.5),
     "wind_coef": (-1.0, 1.0),
     "precip_coef": (-5.0, 5.0),
     "bias": (-10.0, 10.0),
 }
+# params that must NOT default to 0 when absent — scale multiplies the model
+PARAM_DEFAULTS = {"scale": 1.0}
 HOLDOUT_FRACTION = 1 / 3
 
 
@@ -71,10 +74,11 @@ def _client(base_url: str, api_key: str) -> OpenAI:
 def _clamp(params: Dict[str, Any]) -> Dict[str, float]:
     out = {}
     for k, (lo, hi) in PARAM_BOUNDS.items():
+        default = PARAM_DEFAULTS.get(k, 0.0)
         try:
-            v = float(params.get(k, 0.0))
+            v = float(params.get(k, default))
         except (TypeError, ValueError):
-            v = 0.0
+            v = default
         out[k] = round(max(lo, min(hi, v)), 4)
     return out
 
@@ -98,14 +102,16 @@ def _parse_llm_json(text: str) -> Dict[str, Any]:
 
 SYSTEM_PROMPT = (
     "You are the reasoning core of a self-improving air-quality agent.\n"
-    "Strategy: pred = pm25_model + humidity_coef*(humidity-50) "
+    "Strategy: pred = scale*pm25_model + humidity_coef*(humidity-50) "
     "+ wind_coef*(wind-5) + precip_coef*precipitation + bias\n"
     "Propose new params to reduce systematic error. Be conservative: small "
-    "changes from the current values. NOTE: bias POSITIVE raises predictions.\n"
+    "changes from the current values. NOTE: bias POSITIVE raises predictions; "
+    "scale multiplies the model PM2.5 — scale > 1 raises predictions "
+    "proportionally.\n"
     "Reply ONLY with JSON in this shape (numbers are yours to choose):\n"
     '{"what_went_wrong": "...", "pattern_discovered": "...", '
     '"change_made": "...", "why_it_should_help": "...", '
-    '"proposed_params": {"humidity_coef": 0, "wind_coef": 0, '
+    '"proposed_params": {"scale": 1.0, "humidity_coef": 0, "wind_coef": 0, '
     '"precip_coef": 0, "bias": 0}}'
 )
 
@@ -379,7 +385,36 @@ def analyse_errors(
 
 
 def heuristic_params(current: Dict[str, Any], tune_errors: List[Dict[str, Any]]) -> Dict[str, float]:
-    """Deterministic fallback when the LLM can't be reached or returns junk."""
+    """Deterministic fallback: OLS on the TUNE split only.
+
+    Fits actual ≈ scale*pm25_model + bias with the other coefficients frozen
+    at the incumbent's values (their contribution is subtracted first).
+    Never sees holdout data — only tune_errors passed in."""
+    xs: List[float] = []
+    ys: List[float] = []
+    for e in tune_errors:
+        feats = e.get("inputs") or {}
+        pm = feats.get("pm25_model")
+        if pm is None:
+            continue
+        humidity = feats.get("humidity") or 50.0
+        wind = feats.get("wind_speed") or 5.0
+        precip = feats.get("precipitation") or 0.0
+        adj = (current.get("humidity_coef", 0.0) * (humidity - 50.0)
+               + current.get("wind_coef", 0.0) * (wind - 5.0)
+               + current.get("precip_coef", 0.0) * precip)
+        xs.append(float(pm))
+        ys.append(e["actual"] - adj)
+    if len(xs) >= 2:
+        mx = sum(xs) / len(xs)
+        my = sum(ys) / len(ys)
+        sxx = sum((x - mx) ** 2 for x in xs)
+        scale = (sum((x - mx) * (y - my) for x, y in zip(xs, ys)) / sxx
+                 if sxx else 1.0)
+        new = dict(current)
+        new["scale"] = scale
+        new["bias"] = my - scale * mx
+        return _clamp(new)
     avg_err = sum(e["error"] for e in tune_errors) / len(tune_errors)
     new = dict(current)
     new["bias"] = current.get("bias", 0.0) - avg_err * 0.5
@@ -417,6 +452,7 @@ def _errors_for(strategy_params: Dict[str, Any], pairs: List[Dict[str, Any]]) ->
     for m in pairs:
         pred = prediction.predict("v2-improved", m["inputs"], strategy_params)
         errs.append({"station_id": m["station_id"], "timestamp": m["timestamp"],
+                     "inputs": m["inputs"],
                      "predicted": pred, "actual": m["actual"], "error": pred - m["actual"]})
     return errs
 
@@ -611,7 +647,7 @@ def _reppo_input(
         "TASK: propose correction params for a PM2.5 correction strategy given "
         "tune-split error statistics. The proposal is judged for soundness, "
         "not outcome.\n"
-        "STRATEGY FORMULA: pred = pm25_model + humidity_coef*(humidity-50) "
+        "STRATEGY FORMULA: pred = scale*pm25_model + humidity_coef*(humidity-50) "
         "+ wind_coef*(wind-5) + precip_coef*precipitation + bias\n"
         f"CURRENT PARAMS: {json.dumps(current_params)}\n"
         f"TUNE-SPLIT STATS SHOWN TO THE PROPOSER: mean_error={tune_stats['avg_err']:+.2f} "

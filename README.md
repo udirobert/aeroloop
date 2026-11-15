@@ -217,8 +217,12 @@ in [`docs/vision.md`](docs/vision.md#roadmap).
   24-hour targets (indicative). First finding: raw CAMS is unfit at all 26
   sites — it under-responds by roughly half — and the current offset-only
   correction can't fix that (`submission/evidence/real-audit-multisite.json`).
-- Next: add a scale term to the strategy, Breathe London sensors (needs a key),
-  sensor trust tiers and the trust map.
+- The strategy can now scale CAMS as well as shift it. A tournament on the
+  26-site data improved holdout MAE ~4% but every site stays unfit; both SERV
+  proposers were refused by SERV's content filter
+  (`submission/evidence/tournament-multisite-scale-run1.json`).
+- Next: reference-data quality filter, episode-aware corrections, Breathe
+  London sensors (needs a key), sensor trust tiers and the trust map.
 
 ## Run 1 vs run N
 

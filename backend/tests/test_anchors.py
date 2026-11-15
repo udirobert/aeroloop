@@ -103,12 +103,13 @@ def test_base_rpc_error(monkeypatch):
 
 
 def test_build_endpoint_and_verify_flow(temp_db, monkeypatch, tmp_path):
+    # import main first: its load_dotenv re-sets env vars from backend/.env
+    from fastapi.testclient import TestClient
+    import main
     monkeypatch.setenv("ANCHORS_DIR", str(tmp_path / "anchors"))
     monkeypatch.delenv("ADMIN_TOKEN", raising=False)
     monkeypatch.delenv("BASE_ANCHOR_PRIVATE_KEY", raising=False)
     monkeypatch.setattr(commitments, "_ots_bin", lambda: None)
-    from fastapi.testclient import TestClient
-    import main
 
     with TestClient(main.app) as client:
         client.post("/demo-day?hours=6")

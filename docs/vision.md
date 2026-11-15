@@ -123,6 +123,18 @@ and cannot fix a slope problem. Evidence:
 `submission/evidence/real-audit-multisite.json`. This is the kind of honest,
 specific result the product exists to produce.
 
+**Follow-up (same data, scale term added to the strategy).** A tournament run
+let proposers scale CAMS as well as shift it
+(`submission/evidence/tournament-multisite-scale-run1.json`). Gemma won with a
+cautious scale of 1.02, cutting holdout MAE about 4% (10.55 → 10.16 µg/m³), but
+all 26 sites stay unfit. Both SERV proposers were refused by SERV's content
+filter and are recorded as provider errors. The likely reason a global
+correction can't pass: the tune weeks (October) were clean (mean reference
+6.9 µg/m³) while the holdout weeks in November contained pollution episodes
+where CAMS badly under-reads — a regime change, not a constant slope. The data
+also contains 148 negative reference values (minimum −15 µg/m³) that need a
+quality filter.
+
 ## How the product earns trust
 
 The mechanics already in this repo are the moat — they are what make an audit
@@ -223,9 +235,13 @@ credible rather than a vendor's word:
 
 ## Open questions
 
-- The strategy formula only adds offsets, but CAMS's main error is a slope
-  (it under-responds by roughly half). Add a scale term so proposers can fix
-  it — then re-run the tournament on the 26-site data.
+- A scale term alone didn't help: CAMS's error changes with the pollution
+  regime. Does a correction need episode-aware features (e.g. NO2, wind, recent
+  error), per-site terms, or a nonlinear challenger — and how do we keep it
+  auditable?
+- SERV's content filter refuses our benign proposer prompt. Can it be
+  configured (SERV Tools) without weakening the comparison, or does OpenServ
+  need to look at it?
 
 - How many Breathe London nodes sit within ~500 m of a qualifying reference
   monitor? (sensor.community: none.)
