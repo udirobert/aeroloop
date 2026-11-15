@@ -135,27 +135,39 @@ credible rather than a vendor's word:
 - **Not willing to flatter a sensor.** If the evidence says a device is not fit
   for a site, AeroLoop says so. That honesty is the product.
 
-## Where we are today (honest state)
+## Where we are today (honest state, 2026-11-15)
 
-- Working loop: predict → save → resolve truth → score → propose (LLM) →
-  holdout gate → keep/reject, with versioned strategies and a dashboard.
+- Working loop: predict → save → resolve truth → score → propose → holdout
+  gate → keep/reject, with versioned strategies and a dashboard.
+- **Milestone 1 built:** correction tournament (SERV Nano, SERV Ultra, an
+  open-weight model, a heuristic; TabPFN as benchmark-only), holdout time
+  windows, blind Reppo soundness gate, per-prediction SHA-256 commitments,
+  daily Merkle batches with OpenTimestamps and Base anchoring, and a verify
+  endpoint. Not yet exercised live: the Reppo API (no key yet) and an on-chain
+  Base anchor (no wallet yet).
 - Subject under audit: **CAMS model PM2.5** at four London stations — not yet
   low-cost sensor feeds, and not yet PM10.
-- Real reference truth: LAQN for north_kensington (KC1). Other stations use a
-  labelled synthetic stand-in.
-- The agent has already learned a real, auditable correction: CAMS
-  systematically under-reads London's monitors, with a station-specific uplift.
+- Real reference truth: LAQN for north_kensington (KC1), including a 192-hour
+  ratified hindcast. Other stations use a labelled synthetic stand-in.
+- Known limits: SERV cannot be switched off on its endpoint, so there is no
+  like-for-like "same model without SERV" arm yet; repeated tournaments on the
+  same history slowly tune to the holdout (live mode will fix this); TabPFN's
+  licence is non-commercial, so it stays a benchmark entrant.
 
 ## Roadmap
 
-**Milestone 1 — Referee + tournament (foundation)**
-- Proposer interface; proposers: SERV-backed cheap model, the same model
-  without SERV, a frontier model, TabPFN, the deterministic heuristic.
+**Milestone 1 — Referee + tournament (foundation) — built 2026-11-15**
+- Proposer interface; proposers: SERV Nano, SERV Ultra, an open-weight model,
+  TabPFN (benchmark-only), the deterministic heuristic. Still open: a true
+  "same model without SERV" arm.
 - Fair scoring: identical prompt and tune data, rolling holdout windows, cost
   and latency per proposal, leaderboard.
-- Reppo soundness gate on every proposal; store score, decision, confidence and
-  critique.
-- SHA-256 hash per prediction at save time; daily batch root anchored publicly.
+- Blind Reppo soundness gate on every accuracy-eligible proposal; store
+  score, decision, confidence and critique.
+- SHA-256 hash per prediction at save time; daily batch root anchored on
+  OpenTimestamps and Base; verify endpoint.
+- Remaining: first live Reppo verdict and first on-chain Base anchor; live mode
+  (proposals committed now, scored on future truth).
 
 **Milestone 2 — Real sensors and the trust map**
 - Ingest Breathe London (and PurpleAir where affordable) plus LAQN/AURN

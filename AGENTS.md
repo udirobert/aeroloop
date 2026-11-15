@@ -22,6 +22,8 @@ When changing product, demo or docs, check the change against the vision:
   Synthetic readings stay labelled `synthetic` in the DB and API `source`.
 - The holdout split is never used for tuning.
 - Rejected strategies are recorded, never deleted.
+- Prediction commitments: `committed_at` is self-reported; only the anchor time
+  is publicly proven. Never describe `hindcast` or `simulated` rows as pre-truth.
 - Comparisons to EU directive uncertainty limits are labelled *indicative* unless
   computed by the formal method; we do not issue MCERTS/CEN classifications.
 - Market numbers in docs must trace to a source in the research report; label
@@ -35,14 +37,26 @@ cd backend && python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt && cp ../.env.example .env
 uvicorn main:app --reload --port 8000   # dashboard at http://localhost:8000
 
-# lint (config in .ruff.toml)
+# lint (config in .ruff.toml) and tests (no network; uses temp DBs)
 ruff check backend
+cd backend && pip install -r requirements-dev.txt && python -m pytest -q
+# On this Mac the shell can flip to Rosetta; if a wheel fails to import, run
+# `arch -arm64 .venv/bin/python -m pytest -q`.
 
 # TrueForge harness (Node >= 22.14)
 npm install && npm run typecheck
 ```
 
 Demo loop: `POST /demo-day` (offline, 24h of predictions + delayed truth), then
-`POST /self-improve`.
+`POST /tournament` (or the older single-proposer `POST /self-improve`).
+
+Anchoring: `POST /anchors/build?date=YYYY-MM-DD` (or `python anchor_daily.py`)
+builds a day's Merkle batch into `anchors/`, stamps OpenTimestamps and anchors on
+Base. Tests and smoke runs must set `ANCHORS_DIR` and `DATABASE_PATH` to temp
+paths so nothing lands in the real `anchors/` or `data/`.
+
+Media: video files are gitignored. The only tracked videos are the ones the
+README and submissions link to (`docs/aeroloop-openserv-demo.mp4`,
+`docs/ghost-film.mp4`, `docs/ghost-film.gif`); don't add others.
 
 `video/` is a separate HyperFrames project with its own `AGENTS.md`.

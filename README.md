@@ -35,9 +35,19 @@ elsewhere). The loop:
 3. Retrieves the actual ground-monitor reading once available.
 4. Computes the error (MAE, RMSE, bias).
 5. Analyses recurring errors **on a tune split** and proposes a strategy change
-   (prose + parameters, via an open-weight model).
-6. Re-evaluates on a **chronological holdout** the tuning step never saw.
-7. Keeps the change only if it genuinely improves — and remembers rejections too.
+   (prose + parameters). In tournament mode (`POST /tournament`) several
+   proposers — SERV Nano, SERV Ultra, an open-weight model, a deterministic
+   heuristic, and TabPFN as a benchmark-only challenger — get byte-identical
+   prompts built from tune data only.
+6. Re-evaluates every proposal on a **chronological holdout** the tuning step
+   never saw, split into time windows: a proposal must beat the incumbent
+   overall *and* in a majority of windows.
+7. Sends qualifying proposals to a blind Reppo peer review for soundness, keeps
+   the best one that passes — and remembers rejections too.
+
+Every prediction is also hashed when it is saved, and daily batches are
+anchored on OpenTimestamps and Base so anyone can check it existed by a given
+time (see [Verify a prediction](#verify-a-prediction)).
 
 ## Where it came from
 
@@ -94,7 +104,16 @@ backend/
 ├── data_sources.py  Open-Meteo Air Quality + weather fetchers (London)
 ├── prediction.py    v1 baseline + v2 parametric correction strategies
 ├── evaluation.py    MAE / RMSE / bias over matched prediction/reading pairs
-└── agent.py         Self-improvement loop: tune-split analysis → holdout gate → keep/reject
+├── agent.py         Self-improvement loop + correction tournament (holdout windows, winner rule)
+├── proposers.json   Tournament proposer registry (no secrets; keys come from env)
+├── reppo.py         Reppo Evaluation API client — blind soundness gate
+├── commitments.py   Prediction hashes, Merkle batches, OpenTimestamps, verify view
+├── base_anchor.py   Anchors daily Merkle roots on Base (Sepolia by default)
+├── anchor_daily.py  Cron entry point: build yesterday's batch, stamp OTS, anchor on Base
+├── backfill_laqn.py Real-reference hindcast against ratified LAQN data (kind "hindcast")
+├── score_real_audit.py  Scores strategies on the LAQN hindcast
+└── tests/           pytest suite (no network)
+anchors/             Published daily batch records (<date>.json, .root, .root.ots)
 frontend/
 ├── index.html       Dashboard: predicted-vs-measured chart, agent report, strategy memory
 ├── scene.html/.js   "The Ghost Over London" — spectral 3D city (vendored three.js)
@@ -117,7 +136,7 @@ frontend/
 
 ## Verify a prediction
 
-Every prediction is **committed before its truth can exist**. At save time the
+Every prediction is **committed when it is saved**. At save time the
 backend builds a canonical JSON payload (sorted keys, no spaces) containing the
 station, timestamp, predicted value, strategy, inputs and a `committed_at`
 UTC stamp, and stores its SHA-256 as `commit_hash` plus the exact payload
@@ -173,9 +192,14 @@ in [`docs/vision.md`](docs/vision.md#roadmap).
 
 ## Status
 
-Core prediction + feedback + self-improvement loop works end-to-end, verified
-2026-10-31. Real LAQN ground truth wired for north_kensington (KC1) 2026-11-05;
-wider AURN coverage, Sentinel-5P/AOD satellite features are next priorities.
+- Core predict → truth → score → improve loop: working since 2026-10-31.
+- Real LAQN reference truth for North Kensington (KC1); 192-hour ratified
+  hindcast audit in `submission/evidence/real-audit-scores.json`.
+- Correction tournament with SERV proposers and the blind Reppo gate: built and
+  tested (Reppo not yet exercised against the live API — needs `REPPO_API_KEY`).
+- Prediction hashes, Merkle batches and OpenTimestamps stamping: working; Base
+  anchoring built and tested against a mocked node, not yet sent on-chain.
+- Next: Milestone 2 — more reference sites, Breathe London sensors, trust map.
 
 ## Run 1 vs run N
 

@@ -21,3 +21,13 @@ video/assets/*.webm
 
 # video working files: rendered media + HyperFrames artifacts stay local
 video/.thumbnails/
+
+# All video files are local-only by default. Already-tracked files linked
+# from README/submissions (docs/aeroloop-openserv-demo.mp4, docs/ghost-film.mp4,
+# docs/ghost-film.gif) stay tracked; ignore rules don't untrack them.
+*.mp4
+*.mov
+*.webm
+*.mkv
+*.m4v
+*.avi
