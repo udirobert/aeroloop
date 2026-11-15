@@ -1,12 +1,16 @@
 .env
 data/*.db
 data/*.db-*
+data/*.db.bak-*
 __pycache__/
 *.pyc
 .venv/
 node_modules/
 .DS_Store
 *.log
+
+# large local-only render (78 MB); the submission demo is docs/aeroloop-openserv-demo.mp4
+docs/stranger-builds-video.mp4
 
 # video working files: rendered media + HyperFrames artifacts stay local
 video/.hyperframes/

@@ -1,14 +1,34 @@
-# AeroLoop — A Self-Improving Air Quality Intelligence Agent
+# AeroLoop — the independent auditor for air-quality data
 
-> **Hacktoberfest Week 4 (Oct 26–31, 2026) — "Ghost in the Machine" entry.**
-> A self-improving agent that predicts PM2.5 over London, compares against ground
-> monitors, finds patterns in its own errors, rewrites its own estimation strategy,
-> and proves — on data it never tuned against — whether it actually got better.
+> AeroLoop corrects any sensor or model against reference monitors, proves every
+> correction on held-out data it never tuned on, has each change peer-verified,
+> and keeps an audit trail of what changed and why — rejected ideas included.
 
-## What it is
+**Vision, market and roadmap:** [`docs/vision.md`](docs/vision.md) ·
+**Evidence (42 sources):** [`docs/research/positioning-2026-11.md`](docs/research/positioning-2026-11.md) ·
+**OpenServ Hackathon 2 submission:** [`SUBMISSION-OPENSERV.md`](SUBMISSION-OPENSERV.md) ·
+[demo video](docs/aeroloop-openserv-demo.mp4)
 
-AeroLoop is not a dashboard. It's an autonomous agent that gets **measurably better**
-at a real-world task: estimating local PM2.5 air pollution. It:
+## Why it matters
+
+Cheap air-quality data is everywhere; trusted air-quality data is not. Low-cost
+sensors drift, vendors calibrate their own hardware, and the UK's Institute of
+Air Quality Management has warned that many low-cost sensors under-report PM10
+near the 190 µg/m³ construction action level. From **12 December 2026** the
+revised EU Ambient Air Quality Directive sets numeric uncertainty limits for
+every type of evidence. What's missing is an independent party that produces
+**proof** a correction is valid. That is AeroLoop.
+
+First market: UK construction and demolition dust monitoring, where Section 61
+consents and planning conditions already require continuous PM10 monitoring and
+the developer pays. See [`docs/vision.md`](docs/vision.md) for who pays, why
+now, and what we deliberately are not.
+
+## How it works
+
+Today the subject under audit is CAMS model PM2.5 at four London stations (real
+LAQN reference truth at North Kensington; a labelled synthetic stand-in
+elsewhere). The loop:
 
 1. Predicts PM2.5 at a London monitoring station using only data available at prediction time.
 2. Saves the prediction **before** seeing the ground truth.
@@ -19,14 +39,13 @@ at a real-world task: estimating local PM2.5 air pollution. It:
 6. Re-evaluates on a **chronological holdout** the tuning step never saw.
 7. Keeps the change only if it genuinely improves — and remembers rejections too.
 
-## The "Ghost in the Machine" angle
+## Where it came from
 
-Air quality is the ghost of the city's past — the invisible residue of traffic,
-industry and weather that lingers long after the source is gone. AeroLoop honours
-that history: it remembers every prediction, every error, every lesson, and carries
-them forward in versioned, auditable strategy files. Rejected strategies stay in the
-record as `vN-rejected` — the ghosts of ideas that didn't work. The "ghost" is the
-model's own memory of mistakes, made tangible and measurable.
+AeroLoop started as a Hacktoberfest 2026 "Ghost in the Machine" entry (rejected
+strategies are kept as `vN-rejected` — the ghosts of ideas that didn't work;
+see [`SUBMISSION.md`](SUBMISSION.md) and the "Ghost Over London" scene), then
+became a Stranger Builds / TrueForge entry (see "Run 1 vs run N" below). Those
+entries are kept as history; the direction now is [`docs/vision.md`](docs/vision.md).
 
 ## Open innovation
 
@@ -95,6 +114,15 @@ frontend/
   Where it doesn't, readings fall back to a deterministic synthetic stand-in,
   clearly labelled `synthetic` in the DB and in the API response's `source`.
 - If the agent does not improve, it reports that honestly.
+
+## Roadmap
+
+AeroLoop is becoming **Proof of Air**: a neutral referee that scores any
+proposer's corrections on hidden future data (a tournament that doubles as a
+public SERV benchmark), gates each change on a Reppo peer verdict, hashes every
+prediction before its truth exists, rates London's low-cost sensors on a live
+trust map, and sells verification over OpenServ's x402 marketplace. Milestones
+in [`docs/vision.md`](docs/vision.md#roadmap).
 
 ## Status
 

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>AeroLoop — Self-Improving Air Quality Agent</title>
+  <title>AeroLoop — the independent auditor for air-quality data</title>
   <style>
     * { box-sizing: border-box; }
     body { font-family: system-ui, sans-serif; margin: 0; background: #0a0e1a; color: #e6edf3; }
@@ -47,9 +47,9 @@
 </head>
 <body>
   <header>
-    <h1><span class="ghost">👻</span> AeroLoop</h1>
-    <div class="subtitle">A self-improving PM2.5 agent — it remembers every mistake. Open-weight model, local-first.</div>
-    <a href="/scene" style="margin-left:auto;font-size:12px;color:#a78bfa;text-decoration:none;letter-spacing:.06em">the ghost over london →</a>
+    <h1>AeroLoop</h1>
+    <div class="subtitle">The independent auditor for air-quality data — every correction proven on a chronological holdout, every rejected idea kept.</div>
+    <a href="/scene" style="margin-left:auto;font-size:12px;color:#a78bfa;text-decoration:none;letter-spacing:.06em">3D London audit scene →</a>
   </header>
   <main>
     <div class="card">
@@ -90,6 +90,22 @@
         <thead><tr><th>Version</th><th>Parent</th><th>Params</th><th>What it learned</th></tr></thead>
         <tbody id="strategies"><tr><td colspan="4" style="color:#6b7386">—</td></tr></tbody>
       </table>
+    </div>
+    <div class="card wide">
+      <h2>Tournament <span style="color:#6b7386;font-weight:400;text-transform:none">— SERV Reasoning proposers vs baselines: same prompt, same holdout windows</span></h2>
+      <div class="controls">
+        <button class="primary" onclick="runTournament()">Run tournament</button>
+        <span id="tournamentMeta" style="font-size:12px;color:#8b93a7"></span>
+      </div>
+      <table style="margin-top:12px">
+        <thead><tr>
+          <th>Proposer</th><th>Model</th><th>SERV</th><th>Status</th>
+          <th>Holdout MAE</th><th>Windows won</th><th>Eligible</th>
+          <th>Soundness gate</th><th>Latency</th><th>Tokens</th><th>Cost</th>
+        </tr></thead>
+        <tbody id="leaderboard"><tr><td colspan="11" style="color:#6b7386">Run a tournament to see the leaderboard.</td></tr></tbody>
+      </table>
+      <div class="hint">Accuracy-eligible = beats the incumbent's whole-holdout MAE AND wins a strict majority of chronological sub-windows. Eligible proposals get a Reppo peer soundness verdict.</div>
     </div>
   </main>
   <script>
@@ -164,6 +180,64 @@
       refresh();
     }
 
+    const fmt = (v, d=3) => (v === null || v === undefined || Number.isNaN(v)) ? '—' : (+v).toFixed(d).replace(/\.?0+$/, '');
+
+    async function runTournament() {
+      status('Tournament running — proposers competing on the same holdout…');
+      const r = await fetch(API + '/tournament', { method: 'POST' });
+      const d = await r.json();
+      if (d.detail) { status('Tournament failed: ' + JSON.stringify(d.detail)); return; }
+      renderTournament(d);
+      refresh();
+    }
+
+    async function loadLatestTournament() {
+      const runs = await (await fetch(API + '/tournament/runs?limit=1')).json();
+      if (!runs.length) return;
+      const d = await (await fetch(API + '/tournament/runs/' + runs[0].id)).json();
+      if (!d.detail) renderTournament(d, true);
+    }
+
+    function renderTournament(d, quiet) {
+      const incMae = d.incumbent_scores.whole.mae;
+      document.getElementById('tournamentMeta').textContent =
+        `run #${d.id} · incumbent ${d.incumbent_version} MAE ${incMae} · ` +
+        `tune n=${d.tune_n}, holdout n=${d.holdout_n} in ${d.windows} windows · ` +
+        `outcome: ${d.outcome}${d.strategy_version ? ' → ' + d.strategy_version : ''}`;
+      document.getElementById('leaderboard').innerHTML = d.proposals.map(p => {
+        const mae = p.holdout && p.holdout.whole ? p.holdout.whole.mae : null;
+        const delta = (mae !== null && !Number.isNaN(mae)) ? ` (${mae - incMae >= 0 ? '+' : ''}${(mae - incMae).toFixed(3)})` : '';
+        const gate = p.gate_status === 'ineligible' ? 'n/a (predictor)'
+          : p.gate_status ? p.gate_status + (p.reppo && p.reppo.score !== undefined && p.reppo.score !== null
+            ? ` · ${p.reppo.score}/${p.reppo.confidence || '?'}` : '')
+          : '—';
+        const statusCell = p.status === 'ok' ? 'ok'
+          : `${p.status}${p.error ? ` — ${p.error}` : ''}`;
+        const toks = p.prompt_tokens != null ? `${p.prompt_tokens}+${p.completion_tokens}` : '—';
+        const ev = p.provider_evidence || p;
+        const finish = ev.finish_reason && ev.finish_reason !== 'stop'
+          ? ` · ${ev.finish_reason}` : '';
+        const prov = ev.response_id
+          ? `<div class="hint" style="margin-top:2px">resp <code>${ev.response_id}</code>${finish}</div>` : '';
+        return `<tr${p.status === 'skipped' || p.status === 'error' ? ' class="rejected"' : ''}>
+          <td><code>${p.proposer}</code>${p.note ? `<div class="hint" style="margin-top:2px">${p.note}</div>` : ''}${prov}</td>
+          <td>${p.model || '—'}</td>
+          <td>${p.uses_serv ? 'yes' : 'no'}</td>
+          <td>${statusCell}</td>
+          <td>${fmt(mae)}${delta}</td>
+          <td>${p.windows_won !== null && p.windows_won !== undefined ? p.windows_won + '/' + d.windows : '—'}</td>
+          <td>${p.proposer === 'tabpfn' ? 'ineligible' : (p.eligible ? 'yes' : 'no')}</td>
+          <td>${gate}</td>
+          <td>${p.latency_ms != null ? p.latency_ms + ' ms' : '—'}</td>
+          <td>${toks}</td>
+          <td>${p.cost_usd != null ? '$' + p.cost_usd : '—'}</td>
+        </tr>`;
+      }).join('');
+      if (!quiet) status(d.winner
+        ? `Tournament winner: ${d.winner} → saved as ${d.strategy_version}.`
+        : `No proposal survived (${d.outcome}) — best attempt kept as ghost ${d.strategy_version}.`);
+    }
+
     async function loadStrategies() {
       const rows = await (await fetch(API + '/strategies')).json();
       document.getElementById('strategies').innerHTML = rows.map(s => {
@@ -207,6 +281,7 @@
     document.getElementById('strategy').addEventListener('change', refresh);
     window.addEventListener('resize', drawChart);
     refresh();
+    loadLatestTournament();
   </script>
 </body>
 </html>

@@ -61,8 +61,45 @@ def init_db() -> None:
             created_at TEXT NOT NULL,
             parent_version TEXT
         );
+        CREATE TABLE IF NOT EXISTS tournament_runs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            created_at TEXT NOT NULL,
+            incumbent_version TEXT,
+            tune_n INTEGER,
+            holdout_n INTEGER,
+            windows INTEGER,
+            winner TEXT,
+            strategy_version TEXT,
+            outcome TEXT,
+            incumbent_scores TEXT
+        );
+        CREATE TABLE IF NOT EXISTS proposals (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            run_id INTEGER NOT NULL,
+            proposer TEXT NOT NULL,
+            label TEXT,
+            model TEXT,
+            uses_serv INTEGER,
+            status TEXT,
+            error TEXT,
+            params TEXT,
+            analysis TEXT,
+            holdout TEXT,
+            windows_won INTEGER,
+            eligible INTEGER,
+            latency_ms INTEGER,
+            prompt_tokens INTEGER,
+            completion_tokens INTEGER,
+            cost_usd REAL,
+            gate_status TEXT,
+            reppo TEXT,
+            provider_evidence TEXT
+        );
         """
     )
+    cols = {r["name"] for r in c.execute("PRAGMA table_info(proposals)")}
+    if "provider_evidence" not in cols:
+        c.execute("ALTER TABLE proposals ADD COLUMN provider_evidence TEXT")
     c.commit()
     c.close()
 
@@ -173,3 +210,106 @@ def get_strategies() -> List[Dict[str, Any]]:
     rows = c.execute("SELECT * FROM strategies ORDER BY created_at").fetchall()
     c.close()
     return [dict(r) for r in rows]
+
+
+_PROPOSAL_JSON_FIELDS = ("params", "analysis", "holdout", "reppo", "provider_evidence")
+
+
+def save_tournament_run(run: Dict[str, Any]) -> int:
+    """Persist one tournament run + its proposal rows. Returns run id."""
+    c = _conn()
+    cur = c.execute(
+        """INSERT INTO tournament_runs (created_at, incumbent_version, tune_n, holdout_n,
+           windows, winner, strategy_version, outcome, incumbent_scores)
+           VALUES (?,?,?,?,?,?,?,?,?)""",
+        (
+            run["created_at"],
+            run.get("incumbent_version"),
+            run.get("tune_n"),
+            run.get("holdout_n"),
+            run.get("windows"),
+            run.get("winner"),
+            run.get("strategy_version"),
+            run.get("outcome"),
+            json.dumps(run.get("incumbent_scores")),
+        ),
+    )
+    run_id = cur.lastrowid
+    for p in run.get("proposals", []):
+        evidence = {k: p[k] for k in ("response_id", "finish_reason",
+                                      "cached_tokens", "reasoning_tokens",
+                                      "response_schema")
+                    if p.get(k) is not None}
+        c.execute(
+            """INSERT INTO proposals (run_id, proposer, label, model, uses_serv, status,
+               error, params, analysis, holdout, windows_won, eligible, latency_ms,
+               prompt_tokens, completion_tokens, cost_usd, gate_status, reppo,
+               provider_evidence)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+            (
+                run_id,
+                p.get("proposer"),
+                p.get("label"),
+                p.get("model"),
+                int(bool(p.get("uses_serv"))),
+                p.get("status"),
+                p.get("error"),
+                json.dumps(p.get("params")) if p.get("params") is not None else None,
+                json.dumps(p.get("analysis")) if p.get("analysis") is not None else None,
+                json.dumps(p.get("holdout")) if p.get("holdout") is not None else None,
+                p.get("windows_won"),
+                int(bool(p.get("eligible"))) if p.get("eligible") is not None else None,
+                p.get("latency_ms"),
+                p.get("prompt_tokens"),
+                p.get("completion_tokens"),
+                p.get("cost_usd"),
+                p.get("gate_status"),
+                json.dumps(p.get("reppo")) if p.get("reppo") is not None else None,
+                json.dumps(evidence) if evidence else None,
+            ),
+        )
+    c.commit()
+    c.close()
+    return run_id
+
+
+def _decode_proposal(row: Dict[str, Any]) -> Dict[str, Any]:
+    r = dict(row)
+    for f in _PROPOSAL_JSON_FIELDS:
+        if r.get(f) is not None:
+            r[f] = json.loads(r[f])
+    r["uses_serv"] = bool(r.get("uses_serv"))
+    r["eligible"] = bool(r.get("eligible")) if r.get("eligible") is not None else None
+    return r
+
+
+def get_tournament_runs(limit: int = 20) -> List[Dict[str, Any]]:
+    c = _conn()
+    rows = c.execute(
+        "SELECT * FROM tournament_runs ORDER BY id DESC LIMIT ?", (limit,)
+    ).fetchall()
+    c.close()
+    out = []
+    for r in rows:
+        d = dict(r)
+        if d.get("incumbent_scores"):
+            d["incumbent_scores"] = json.loads(d["incumbent_scores"])
+        out.append(d)
+    return out
+
+
+def get_tournament_run(run_id: int) -> Optional[Dict[str, Any]]:
+    c = _conn()
+    run = c.execute("SELECT * FROM tournament_runs WHERE id=?", (run_id,)).fetchone()
+    if run is None:
+        c.close()
+        return None
+    props = c.execute(
+        "SELECT * FROM proposals WHERE run_id=? ORDER BY id", (run_id,)
+    ).fetchall()
+    c.close()
+    d = dict(run)
+    if d.get("incumbent_scores"):
+        d["incumbent_scores"] = json.loads(d["incumbent_scores"])
+    d["proposals"] = [_decode_proposal(p) for p in props]
+    return d

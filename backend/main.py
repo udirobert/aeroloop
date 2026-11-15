@@ -176,6 +176,27 @@ def self_improve():
     return agent.run_self_improvement(pairs)
 
 
+@app.post("/tournament")
+def tournament():
+    pairs = _matched_pairs()
+    if len(pairs) < 6:
+        raise HTTPException(400, f"need >=6 matched prediction/reading pairs, have {len(pairs)}")
+    return agent.run_tournament(pairs)
+
+
+@app.get("/tournament/runs")
+def tournament_runs(limit: int = 20):
+    return db.get_tournament_runs(limit)
+
+
+@app.get("/tournament/runs/{run_id}")
+def tournament_run(run_id: int):
+    run = db.get_tournament_run(run_id)
+    if run is None:
+        raise HTTPException(404, f"tournament run {run_id} not found")
+    return run
+
+
 @app.post("/demo-day")
 def demo_day(hours: int = 24):
     """Simulate a day of predictions + delayed ground truth across all stations.

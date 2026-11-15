@@ -1,0 +1,77 @@
+{
+ "station": "north_kensington (LAQN KC1)",
+ "truth_source": "LAQN KC1 ratified reference PM2.5",
+ "window": [
+  "2026-11-01T00:00:00+00:00",
+  "2026-11-08T23:00:00+00:00"
+ ],
+ "pairs": 192,
+ "tune_n": 128,
+ "holdout_n": 64,
+ "holdout_window": [
+  "2026-11-06T08:00:00+00:00",
+  "2026-11-08T23:00:00+00:00"
+ ],
+ "measured_range": [
+  2.5,
+  103.8
+ ],
+ "strategies": {
+  "v1-baseline": {
+   "whole": {
+    "n": 192,
+    "mae": 9.995,
+    "rmse": 18.769,
+    "bias": -7.265
+   },
+   "holdout": {
+    "n": 64,
+    "mae": 23.269,
+    "rmse": 31.672,
+    "bias": -22.653
+   }
+  },
+  "v2-improved": {
+   "whole": {
+    "n": 192,
+    "mae": 9.598,
+    "rmse": 17.648,
+    "bias": -6.76
+   },
+   "holdout": {
+    "n": 64,
+    "mae": 21.047,
+    "rmse": 29.534,
+    "bias": -19.552
+   }
+  },
+  "v3": {
+   "whole": {
+    "n": 192,
+    "mae": 9.231,
+    "rmse": 17.354,
+    "bias": -5.76
+   },
+   "holdout": {
+    "n": 64,
+    "mae": 20.51,
+    "rmse": 29.007,
+    "bias": -18.795
+   }
+  },
+  "v4": {
+   "whole": {
+    "n": 192,
+    "mae": 9.149,
+    "rmse": 17.236,
+    "bias": -5.06
+   },
+   "holdout": {
+    "n": 64,
+    "mae": 20.234,
+    "rmse": 28.744,
+    "bias": -18.392
+   }
+  }
+ }
+}

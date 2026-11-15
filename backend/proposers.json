@@ -1,0 +1,45 @@
+{
+  "proposers": [
+    {
+      "name": "serv-nano",
+      "label": "SERV Nano (small + SERV Reasoning)",
+      "enabled": true,
+      "uses_serv": true,
+      "base_url": "https://inference-api.openserv.ai/v1",
+      "model": "serv-nano",
+      "api_key_env": "SERV_API_KEY",
+      "token_param": "max_completion_tokens",
+      "price_in_per_m": 0.25,
+      "price_out_per_m": 1.75,
+      "note": "Model id and pricing verified against GET /v1/models on 2026-11-15."
+    },
+    {
+      "name": "serv-ultra",
+      "label": "SERV Ultra (frontier-tier + SERV Reasoning)",
+      "enabled": true,
+      "uses_serv": true,
+      "base_url": "https://inference-api.openserv.ai/v1",
+      "model": "serv-ultra",
+      "api_key_env": "SERV_API_KEY",
+      "token_param": "max_completion_tokens",
+      "price_in_per_m": 6.5,
+      "price_out_per_m": 32.5,
+      "note": "Expensive arm of the same-endpoint comparison. 26x input / 18.6x output vs serv-nano."
+    },
+    {
+      "name": "open-weight",
+      "label": "Open-weight baseline (no SERV)",
+      "enabled": true,
+      "uses_serv": false,
+      "base_url_env": "LLM_BASE_URL",
+      "base_url_default": "http://localhost:11434/v1",
+      "model_env": "LLM_MODEL",
+      "model_default": "nemotron-mini:latest",
+      "api_key_env": "LLM_API_KEY",
+      "api_key_default": "ollama",
+      "price_in_per_m": null,
+      "price_out_per_m": null,
+      "note": "Non-SERV control. SERV Reasoning cannot be disabled on the OpenServ endpoint, so the with/without arm uses a separate provider."
+    }
+  ]
+}
