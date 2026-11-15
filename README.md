@@ -210,8 +210,11 @@ in [`docs/vision.md`](docs/vision.md#roadmap).
 - Correction tournament with SERV proposers and the blind Reppo gate: built,
   tested, and the Reppo gate verified against the live API (verdict in ~90 s,
   440 credits per evaluation).
-- Prediction hashes, Merkle batches and OpenTimestamps stamping: working; Base
-  anchoring built and tested against a mocked node, not yet sent on-chain.
+- Prediction hashes, Merkle batches and anchoring: working end-to-end — the
+  first batch (22,309 hindcast predictions) is anchored on Base Sepolia
+  (tx `0x6094f9a5…4602de`, block 59311637) and OpenTimestamps (pending
+  Bitcoin attestation). Anyone can verify a prediction at
+  `GET /commitments/prediction/{id}`.
 - Milestone 2a: 26 reference sites qualified by probing data, a 40-day
   multi-site hindcast (22,309 pairs), and a trust engine scoring against US EPA
   24-hour targets (indicative). First finding: raw CAMS is unfit at all 26

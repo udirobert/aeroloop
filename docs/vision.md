@@ -204,8 +204,9 @@ credible rather than a vendor's word:
   score, decision, confidence and critique.
 - SHA-256 hash per prediction at save time; daily batch root anchored on
   OpenTimestamps and Base; verify endpoint.
-- Remaining: first on-chain Base anchor; live mode
-  (proposals committed now, scored on future truth).
+- First on-chain Base anchor sent 2026-11-15 (Base Sepolia, 22,309-leaf
+  hindcast batch); OTS stamp pending Bitcoin attestation.
+- Remaining: live mode (proposals committed now, scored on future truth).
 
 **Milestone 2 — Real sensors and the trust map** (2a built 2026-11-15: reference discovery, multi-site hindcast, trust engine, adapters, co-location)
 - Ingest Breathe London (and PurpleAir where affordable) plus LAQN/AURN
