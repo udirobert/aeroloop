@@ -90,12 +90,14 @@ async def backfill(station: str, start: str, end: str) -> int:
         }
         pred = prediction.predict("v1-baseline", feats)
         iso = ts.isoformat()
+        # kind="hindcast": the truth was already ratified — this row must never
+        # read as a pre-truth commitment
         pid = db.save_prediction(Prediction(
             station_id=station, timestamp=ts, predicted_pm25=pred, confidence=0.7,
             strategy_version="v1-baseline", agent_version="aeroloop-0.1",
             inputs=feats,
             source_timestamps={"cams_model": iso, "laqn_reference": raw},
-        ))
+        ), kind="hindcast")
         db.save_reading(GroundReading(
             station_id=station, timestamp=ts, measured_pm25=value,
             source=f"LAQN {site['code']} ratified reference PM2.5",

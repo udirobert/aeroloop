@@ -107,6 +107,19 @@
       </table>
       <div class="hint">Accuracy-eligible = beats the incumbent's whole-holdout MAE AND wins a strict majority of chronological sub-windows. Eligible proposals get a Reppo peer soundness verdict.</div>
     </div>
+    <div class="card">
+      <h2>Commitments <span style="color:#6b7386;font-weight:400;text-transform:none">— proof a prediction predates its truth</span></h2>
+      <div class="controls">
+        <label>Prediction id</label>
+        <input id="commitId" type="number" min="1" style="width:80px;background:#151c2e;color:#dfe6f3;border:1px solid #3b4a6b;padding:7px 10px;border-radius:7px;font-size:13px" />
+        <button onclick="lookupCommitment()">Verify</button>
+      </div>
+      <div id="commitResult" style="margin-top:10px;font-size:13px;color:#9aa3b8">Each prediction is SHA-256 committed at save time; daily Merkle roots anchor to Bitcoin (OTS) and Base.</div>
+      <table style="margin-top:12px">
+        <thead><tr><th>Date</th><th>Leaves</th><th>Root</th><th>OTS</th><th>Base</th></tr></thead>
+        <tbody id="anchorsTable"><tr><td colspan="5" style="color:#6b7386">—</td></tr></tbody>
+      </table>
+    </div>
   </main>
   <script>
     const API = '';
@@ -124,6 +137,7 @@
            <span class="metric"><div class="val">${d.n}</div><div class="lbl">n</div></span>`;
       drawChart();
       loadStrategies();
+      loadAnchors();
     }
 
     async function demoDay() {
@@ -236,6 +250,37 @@
       if (!quiet) status(d.winner
         ? `Tournament winner: ${d.winner} → saved as ${d.strategy_version}.`
         : `No proposal survived (${d.outcome}) — best attempt kept as ghost ${d.strategy_version}.`);
+    }
+
+    async function loadAnchors() {
+      const rows = await (await fetch(API + '/anchors')).json();
+      document.getElementById('anchorsTable').innerHTML = rows.length ? rows.map(a => `
+        <tr><td><code>${a.batch_date}</code></td><td>${a.n_leaves}</td>
+        <td><code>${(a.root || '').slice(0, 12)}…</code></td>
+        <td>${a.ots_status || '—'}</td>
+        <td>${a.base_tx ? `<a href="https://${a.base_chain_id === 84532 ? 'sepolia.' : ''}basescan.org/tx/${a.base_tx}" style="color:#a78bfa">${a.base_status || 'submitted'}</a>` : (a.base_status || '—')}</td>
+        </tr>`).join('') : '<tr><td colspan="5" style="color:#6b7386">No anchors yet.</td></tr>';
+    }
+
+    async function lookupCommitment() {
+      const id = document.getElementById('commitId').value;
+      if (!id) return;
+      const r = await fetch(API + '/commitments/prediction/' + id);
+      const d = await r.json();
+      const el = document.getElementById('commitResult');
+      if (d.detail) { el.textContent = JSON.stringify(d.detail); return; }
+      if (d.kind === 'uncommitted') { el.textContent = `Prediction ${id}: legacy row, no commitment.`; return; }
+      const badge = ok => `<span class="badge ${ok ? 'kept' : 'rejected'}">${ok ? 'yes' : 'no'}</span>`;
+      el.innerHTML = `
+        <div>kind <code>${d.kind}</code> · committed <code>${d.committed_at}</code> <em style="color:#64748b">(self-reported)</em></div>
+        <div style="margin-top:6px">hash matches: ${badge(d.hash_matches)} ·
+          reading recorded after commit: ${d.reading_recorded_after_commit === null ? '—' : badge(d.reading_recorded_after_commit)}</div>
+        <div style="margin-top:6px">existed by: <code>${d.existed_by || '—'}</code>${d.existed_by_source ? ` (${d.existed_by_source})` : ''} ·
+          target after anchor: ${d.target_after_existed_by === null ? '—' : badge(d.target_after_existed_by)}</div>
+        ${d.anchor ? `<div style="margin-top:6px">anchor <code>${d.anchor.batch_date}</code> ·
+          merkle proof valid: ${d.anchor.proof_valid === null ? '—' : badge(d.anchor.proof_valid)} · OTS ${d.anchor.ots_status || '—'} ·
+          ${d.anchor.explorer_url ? `<a href="${d.anchor.explorer_url}" style="color:#a78bfa">base tx</a>` : 'base —'}</div>` : '<div style="margin-top:6px">not yet in an anchor batch</div>'}
+        <div style="margin-top:6px"><code>${d.commit_hash}</code></div>`;
     }
 
     async function loadStrategies() {

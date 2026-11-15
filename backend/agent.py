@@ -14,6 +14,7 @@ proposals get a Reppo soundness verdict; results persist as a leaderboard.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import math
 import os
@@ -598,9 +599,14 @@ def _mae(scored: Optional[Dict[str, Any]]) -> float:
 def _reppo_input(
     tune_stats: Dict[str, Any], tune_errors: List[Dict[str, Any]],
     current_params: Dict[str, Any], proposal: Dict[str, Any],
+    run_created_at: str,
 ) -> str:
-    """Text for the soundness eval. Deliberately contains NO holdout metrics —
+    """Text for the soundness eval. Blind: an opaque proposal id, never the
+    proposer name or model. Deliberately contains NO holdout metrics —
     soundness is judged independently of the outcome."""
+    proposal_id = hashlib.sha256(
+        (json.dumps(proposal.get("params"), sort_keys=True) + run_created_at).encode()
+    ).hexdigest()[:12]
     return (
         "TASK: propose correction params for a PM2.5 correction strategy given "
         "tune-split error statistics. The proposal is judged for soundness, "
@@ -612,7 +618,7 @@ def _reppo_input(
         f"ug/m3, n={tune_stats['n']}, "
         f"mean_error_by_station={json.dumps(tune_stats['per_station'])}; "
         f"sample errors (first 8): {json.dumps(tune_errors[:8])}\n"
-        f"PROPOSER: {proposal['proposer']} (model {proposal.get('model')})\n"
+        f"PROPOSAL ID: {proposal_id}\n"
         f"PROPOSAL ANALYSIS: {json.dumps(proposal.get('analysis', {}))}\n"
         f"PROPOSED PARAMS: {json.dumps(proposal.get('params'))}\n"
         "JUDGE: are the proposed signs/magnitudes physically plausible; is the "
@@ -627,6 +633,7 @@ def run_tournament(matched: List[Dict[str, Any]]) -> Dict[str, Any]:
     Reppo soundness gate on accuracy-eligible proposals."""
     from models import Strategy
 
+    run_created_at = datetime.utcnow().isoformat()
     tune, holdout = _split(matched)
     windows = holdout_windows(holdout)
     n_windows = len(windows)
@@ -747,7 +754,9 @@ def run_tournament(matched: List[Dict[str, Any]]) -> Dict[str, Any]:
         key=lambda p: _mae(p["holdout"]["whole"]),
     )
     for p in eligible:
-        gate = reppo.run_gate(_reppo_input(tune_stats, tune_errors, incumbent_params, p))
+        gate = reppo.run_gate(
+            _reppo_input(tune_stats, tune_errors, incumbent_params, p, run_created_at)
+        )
         p["gate_status"] = gate["status"]
         p["reppo"] = gate["reppo"]
 
@@ -825,7 +834,7 @@ def run_tournament(matched: List[Dict[str, Any]]) -> Dict[str, Any]:
                        _mae((p.get("holdout") or {}).get("whole"))),
     )
     run = {
-        "created_at": datetime.utcnow().isoformat(),
+        "created_at": run_created_at,
         "incumbent_version": incumbent_version,
         "tune_n": len(tune),
         "holdout_n": len(holdout),

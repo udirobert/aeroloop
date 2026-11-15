@@ -1,9 +1,11 @@
 """SQLite persistence for predictions, readings, errors, strategies."""
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import sqlite3
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 DB_PATH = os.getenv(
@@ -95,21 +97,94 @@ def init_db() -> None:
             reppo TEXT,
             provider_evidence TEXT
         );
+        CREATE TABLE IF NOT EXISTS anchors (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            batch_date TEXT UNIQUE,
+            root TEXT,
+            n_leaves INTEGER,
+            leaf_ids TEXT,
+            created_at TEXT,
+            ots_status TEXT,
+            ots_file TEXT,
+            ots_updated_at TEXT,
+            base_network TEXT,
+            base_chain_id INTEGER,
+            base_tx TEXT,
+            base_block INTEGER,
+            base_status TEXT,
+            base_block_time TEXT,
+            base_error TEXT,
+            ots_error TEXT
+        );
         """
     )
     cols = {r["name"] for r in c.execute("PRAGMA table_info(proposals)")}
     if "provider_evidence" not in cols:
         c.execute("ALTER TABLE proposals ADD COLUMN provider_evidence TEXT")
+    # commitment columns (aeroloop-merkle-v1)
+    pred_cols = {r["name"] for r in c.execute("PRAGMA table_info(predictions)")}
+    for col in ("commit_payload", "commit_hash", "committed_at", "commit_kind"):
+        if col not in pred_cols:
+            c.execute(f"ALTER TABLE predictions ADD COLUMN {col} TEXT")
+    if "anchor_id" not in pred_cols:
+        c.execute("ALTER TABLE predictions ADD COLUMN anchor_id INTEGER")
+    read_cols = {r["name"] for r in c.execute("PRAGMA table_info(ground_readings)")}
+    if "recorded_at" not in read_cols:
+        c.execute("ALTER TABLE ground_readings ADD COLUMN recorded_at TEXT")
+    anch_cols = {r["name"] for r in c.execute("PRAGMA table_info(anchors)")}
+    if "base_block_time" not in anch_cols:
+        c.execute("ALTER TABLE anchors ADD COLUMN base_block_time TEXT")
     c.commit()
     c.close()
 
 
-def save_prediction(p) -> int:
+def _utcnow() -> str:
+    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def _commit_fields(p, kind: str) -> Dict[str, Any]:
+    """Canonical commitment payload + hash, built BEFORE the row is inserted.
+
+    The stored commit_payload string is what gets re-hashed on verification, so
+    the hash never depends on float re-serialisation.
+    """
+    committed_at = _utcnow()
+    payload = {
+        "v": 1,
+        "kind": kind,
+        "station_id": p.station_id,
+        "timestamp": p.timestamp.isoformat(),
+        "predicted_pm25": p.predicted_pm25,
+        "units": p.units,
+        "strategy_version": p.strategy_version,
+        "agent_version": p.agent_version,
+        "inputs": p.inputs,
+        "source_timestamps": p.source_timestamps,
+        "committed_at": committed_at,
+    }
+    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"),
+                           ensure_ascii=False)
+    return {
+        "commit_payload": canonical,
+        "commit_hash": hashlib.sha256(canonical.encode("utf-8")).hexdigest(),
+        "committed_at": committed_at,
+        "commit_kind": kind,
+    }
+
+
+def save_prediction(p, kind: str = "live") -> int:
+    """Insert a prediction with its pre-truth commitment.
+
+    kind: "live" (real-time predict), "simulated" (demo-day), "hindcast"
+    (backfill over already-ratified truth — never masquerades as pre-truth).
+    """
+    commit = _commit_fields(p, kind)
     c = _conn()
     cur = c.execute(
         """INSERT INTO predictions (station_id, timestamp, predicted_pm25, units,
-           confidence, strategy_version, agent_version, inputs, source_timestamps)
-           VALUES (?,?,?,?,?,?,?,?,?)""",
+           confidence, strategy_version, agent_version, inputs, source_timestamps,
+           commit_payload, commit_hash, committed_at, commit_kind)
+           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)""",
         (
             p.station_id,
             p.timestamp.isoformat(),
@@ -120,6 +195,10 @@ def save_prediction(p) -> int:
             p.agent_version,
             json.dumps(p.inputs),
             json.dumps(p.source_timestamps),
+            commit["commit_payload"],
+            commit["commit_hash"],
+            commit["committed_at"],
+            commit["commit_kind"],
         ),
     )
     c.commit()
@@ -131,9 +210,11 @@ def save_prediction(p) -> int:
 def save_reading(r) -> int:
     c = _conn()
     cur = c.execute(
-        """INSERT INTO ground_readings (station_id, timestamp, measured_pm25, units, source)
-           VALUES (?,?,?,?,?)""",
-        (r.station_id, r.timestamp.isoformat(), r.measured_pm25, r.units, r.source),
+        """INSERT INTO ground_readings (station_id, timestamp, measured_pm25, units,
+           source, recorded_at)
+           VALUES (?,?,?,?,?,?)""",
+        (r.station_id, r.timestamp.isoformat(), r.measured_pm25, r.units, r.source,
+         _utcnow()),
     )
     c.commit()
     rid = cur.lastrowid
@@ -313,3 +394,121 @@ def get_tournament_run(run_id: int) -> Optional[Dict[str, Any]]:
         d["incumbent_scores"] = json.loads(d["incumbent_scores"])
     d["proposals"] = [_decode_proposal(p) for p in props]
     return d
+
+
+# ---------------------------------------------------------------------------
+# Commitments & anchors
+# ---------------------------------------------------------------------------
+
+def get_prediction(prediction_id: int) -> Optional[Dict[str, Any]]:
+    c = _conn()
+    row = c.execute("SELECT * FROM predictions WHERE id=?", (prediction_id,)).fetchone()
+    c.close()
+    return dict(row) if row else None
+
+
+def get_reading(station_id: str, timestamp: str) -> Optional[Dict[str, Any]]:
+    c = _conn()
+    row = c.execute(
+        "SELECT * FROM ground_readings WHERE station_id=? AND timestamp=?",
+        (station_id, timestamp),
+    ).fetchone()
+    c.close()
+    return dict(row) if row else None
+
+
+def get_committed_predictions(date: Optional[str] = None) -> List[Dict[str, Any]]:
+    """Predictions with a commit_hash. If date given, committed_at's UTC date."""
+    c = _conn()
+    if date:
+        rows = c.execute(
+            """SELECT * FROM predictions WHERE commit_hash IS NOT NULL
+               AND anchor_id IS NULL AND substr(committed_at, 1, 10)=?
+               ORDER BY id""",
+            (date,),
+        ).fetchall()
+    else:
+        rows = c.execute(
+            "SELECT * FROM predictions WHERE commit_hash IS NOT NULL ORDER BY id"
+        ).fetchall()
+    c.close()
+    return [dict(r) for r in rows]
+
+
+def set_prediction_anchor(anchor_id: int, leaf_ids: List[int]) -> None:
+    c = _conn()
+    c.executemany(
+        "UPDATE predictions SET anchor_id=? WHERE id=?",
+        [(anchor_id, pid) for pid in leaf_ids],
+    )
+    c.commit()
+    c.close()
+
+
+def save_anchor(a: Dict[str, Any]) -> int:
+    c = _conn()
+    cur = c.execute(
+        """INSERT OR IGNORE INTO anchors (batch_date, root, n_leaves, leaf_ids,
+           created_at, ots_status, ots_file, base_network, base_chain_id, base_tx,
+           base_block, base_status, base_error, ots_error)
+           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+        (
+            a["batch_date"], a["root"], a["n_leaves"], json.dumps(a["leaf_ids"]),
+            a["created_at"], a.get("ots_status"), a.get("ots_file"),
+            a.get("base_network"), a.get("base_chain_id"), a.get("base_tx"),
+            a.get("base_block"), a.get("base_status"), a.get("base_error"),
+            a.get("ots_error"),
+        ),
+    )
+    c.commit()
+    rid = cur.lastrowid
+    if not rid:  # INSERT OR IGNORE hit the UNIQUE batch_date — fetch existing
+        row = c.execute(
+            "SELECT id FROM anchors WHERE batch_date=?", (a["batch_date"],)
+        ).fetchone()
+        rid = row["id"] if row else None
+    c.close()
+    return rid
+
+
+def get_anchor_by_date(batch_date: str) -> Optional[Dict[str, Any]]:
+    c = _conn()
+    row = c.execute("SELECT * FROM anchors WHERE batch_date=?", (batch_date,)).fetchone()
+    c.close()
+    if not row:
+        return None
+    d = dict(row)
+    d["leaf_ids"] = json.loads(d["leaf_ids"]) if d.get("leaf_ids") else []
+    return d
+
+
+def get_anchors(limit: int = 60) -> List[Dict[str, Any]]:
+    c = _conn()
+    rows = c.execute(
+        "SELECT * FROM anchors ORDER BY batch_date DESC LIMIT ?", (limit,)
+    ).fetchall()
+    c.close()
+    out = []
+    for r in rows:
+        d = dict(r)
+        d["leaf_ids"] = json.loads(d["leaf_ids"]) if d.get("leaf_ids") else []
+        out.append(d)
+    return out
+
+
+def update_anchor(anchor_id: int, **fields: Any) -> None:
+    allowed = {
+        "root", "n_leaves", "leaf_ids", "ots_status", "ots_file", "ots_updated_at",
+        "base_network", "base_chain_id", "base_tx", "base_block", "base_status",
+        "base_block_time", "base_error", "ots_error",
+    }
+    sets, vals = [], []
+    for k, v in fields.items():
+        if k not in allowed:
+            raise ValueError(f"unknown anchor field {k}")
+        sets.append(f"{k}=?")
+        vals.append(json.dumps(v) if k == "leaf_ids" and not isinstance(v, str) else v)
+    c = _conn()
+    c.execute(f"UPDATE anchors SET {', '.join(sets)} WHERE id=?", (*vals, anchor_id))
+    c.commit()
+    c.close()

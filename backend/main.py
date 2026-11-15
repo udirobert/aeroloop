@@ -6,7 +6,7 @@ import os
 import random
 import sys
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 sys.path.insert(0, os.path.dirname(__file__))
 
@@ -14,12 +14,14 @@ from dotenv import load_dotenv
 
 load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))  # before modules read env vars
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, Header, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 import agent
+import base_anchor
+import commitments
 import data_sources
 import db
 import evaluation
@@ -118,7 +120,7 @@ async def predict(req: PredictRequest):
         inputs=features,
         source_timestamps={"aq": features.get("timestamp"), "wx": features.get("timestamp")},
     )
-    pid = db.save_prediction(p)
+    pid = db.save_prediction(p, kind="live")
     return {"prediction_id": pid, "prediction": p.model_dump(mode="json")}
 
 
@@ -197,6 +199,64 @@ def tournament_run(run_id: int):
     return run
 
 
+# ---------------------------------------------------------------------------
+# Commitments & anchors — public proof a prediction predates its truth
+# ---------------------------------------------------------------------------
+
+def _admin(token: Optional[str]) -> None:
+    """Mutating anchor endpoints need X-Admin-Token == ADMIN_TOKEN when set."""
+    required = os.getenv("ADMIN_TOKEN")
+    if required and token != required:
+        raise HTTPException(401, "invalid or missing X-Admin-Token")
+
+
+@app.get("/commitments/prediction/{prediction_id}")
+def commitment(prediction_id: int):
+    view = commitments.prediction_commitment(prediction_id)
+    if view is None:
+        raise HTTPException(404, f"prediction {prediction_id} not found")
+    return view
+
+
+@app.get("/anchors")
+def anchors(limit: int = 60):
+    return db.get_anchors(min(200, max(1, limit)))
+
+
+@app.post("/anchors/build")
+def anchors_build(date: Optional[str] = None, force: bool = False,
+                  x_admin_token: Optional[str] = Header(default=None)):
+    _admin(x_admin_token)
+    day = date or (datetime.now(timezone.utc) - timedelta(days=1)).date().isoformat()
+    built = commitments.build_batch(day, force=force)
+    if built.get("status") in ("error", "empty", "exists"):
+        status_code = 400 if built.get("status") == "error" else 200
+        if built.get("status") == "error":
+            raise HTTPException(status_code, built["error"])
+        return built
+
+    # each downstream anchor degrades independently
+    ots = commitments.stamp_ots(day)
+    base = base_anchor.anchor_root(built["root"])
+    db.update_anchor(
+        built["id"],
+        base_status=base["status"], base_network=base["network"],
+        base_chain_id=base["chain_id"], base_tx=base["tx_hash"],
+        base_block=base["block"], base_block_time=base.get("block_time"),
+        base_error=base["error"],
+    )
+    built["ots"] = ots
+    built["base"] = base
+    built["explorer_url"] = base.get("explorer_url")
+    return built
+
+
+@app.post("/anchors/upgrade-ots")
+def anchors_upgrade(x_admin_token: Optional[str] = Header(default=None)):
+    _admin(x_admin_token)
+    return {"results": commitments.upgrade_pending_ots()}
+
+
 @app.post("/demo-day")
 def demo_day(hours: int = 24):
     """Simulate a day of predictions + delayed ground truth across all stations.
@@ -226,7 +286,7 @@ def demo_day(hours: int = 24):
                 strategy_version="v1-baseline", agent_version="aeroloop-0.1",
                 inputs=feats, source_timestamps={"simulated": ts.isoformat()},
             )
-            pid = db.save_prediction(p)
+            pid = db.save_prediction(p, kind="simulated")
             db.save_reading(GroundReading(
                 station_id=st, timestamp=ts, measured_pm25=actual,
                 source="synthetic demo (offline stand-in)",

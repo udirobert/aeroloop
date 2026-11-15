@@ -6,3 +6,4 @@ select = ["E", "F", "W"]
 [lint.per-file-ignores]
 # dotenv must load before backend modules read env vars at import time
 "backend/main.py" = ["E402"]
+"backend/anchor_daily.py" = ["E402"]
