@@ -24,7 +24,8 @@
 
 ## Reply 2 — the honesty finding
 
-> SERV also refused our benign scientific prompt twice: finish_reason=content_filter,
+> SERV also refused our benign scientific prompt on four calls across our runs
+> (KC1 runs 1–2, and both tiers on the 26-site run): finish_reason=content_filter,
 > "I can't share that." — still billed.
 >
 > We did not disable the filter. We record the refusal, the response id and the cost
@@ -41,6 +42,6 @@
 
 Notes before posting:
 - Replace `@OpenServAI` with their actual handle if different (check openserv.ai footer).
-- Attach `docs/aeroloop-openserv-demo.mp4` to the main post if under X's size limit;
-  otherwise attach a 10 s trimmed clip and link the repo for the full video.
+- Link the YouTube video (https://youtu.be/LqHMPDhwT1o) on the main post; YouTube-hosted video embeds
+  better than an mp4 attachment. Repo still holds the write-up and evidence JSON.
 - Paste the main post's URL into the submission form's X-post field.

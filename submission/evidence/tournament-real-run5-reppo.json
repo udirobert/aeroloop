@@ -1,0 +1,553 @@
+{
+  "created_at": "2026-11-15T22:32:43.621368",
+  "incumbent_version": "v5",
+  "tune_n": 128,
+  "holdout_n": 64,
+  "windows": 3,
+  "winner": null,
+  "strategy_version": "v6-rejected",
+  "outcome": "no_eligible",
+  "incumbent_scores": {
+    "whole": {
+      "n": 64,
+      "mae": 19.747,
+      "rmse": 28.234,
+      "bias": -17.635,
+      "by_station": {
+        "north_kensington": {
+          "n": 64,
+          "ae": 1263.82,
+          "se": 51018.25319999999,
+          "e": -1128.6599999999999,
+          "mae": 19.7471875,
+          "rmse": 28.234025682675856,
+          "bias": -17.635312499999998
+        }
+      },
+      "by_condition": {}
+    },
+    "windows": [
+      {
+        "n": 21,
+        "mae": 7.98,
+        "rmse": 10.53,
+        "bias": -1.629,
+        "by_station": {
+          "north_kensington": {
+            "n": 21,
+            "ae": 167.57999999999998,
+            "se": 2328.6324,
+            "e": -34.2,
+            "mae": 7.9799999999999995,
+            "rmse": 10.530301854308695,
+            "bias": -1.6285714285714288
+          }
+        },
+        "by_condition": {}
+      },
+      {
+        "n": 21,
+        "mae": 15.18,
+        "rmse": 20.909,
+        "bias": -15.096,
+        "by_station": {
+          "north_kensington": {
+            "n": 21,
+            "ae": 318.79,
+            "se": 9181.012900000002,
+            "e": -317.01,
+            "mae": 15.180476190476192,
+            "rmse": 20.90911500939699,
+            "bias": -15.095714285714285
+          }
+        },
+        "by_condition": {}
+      },
+      {
+        "n": 22,
+        "mae": 35.339,
+        "rmse": 42.377,
+        "bias": -35.339,
+        "by_station": {
+          "north_kensington": {
+            "n": 22,
+            "ae": 777.45,
+            "se": 39508.60789999999,
+            "e": -777.45,
+            "mae": 35.33863636363637,
+            "rmse": 42.37742103569262,
+            "bias": -35.33863636363637
+          }
+        },
+        "by_condition": {}
+      }
+    ]
+  },
+  "proposals": [
+    {
+      "proposer": "serv-nano",
+      "label": "SERV Nano (small + SERV Reasoning)",
+      "model": "serv-nano",
+      "uses_serv": true,
+      "status": "ok",
+      "error": null,
+      "analysis": {
+        "pattern_discovered": "Systematic over-prediction (mean_error=+2.72 ug/m3).",
+        "why_it_should_help": "Lower average predictions to reduce the positive mean error while limiting parameter drift."
+      },
+      "params": {
+        "scale": 1.0,
+        "humidity_coef": -0.028,
+        "wind_coef": -0.14,
+        "precip_coef": -0.23,
+        "bias": 3.15
+      },
+      "holdout": {
+        "whole": {
+          "n": 64,
+          "mae": 19.926,
+          "rmse": 28.414,
+          "bias": -17.933,
+          "by_station": {
+            "north_kensington": {
+              "n": 64,
+              "ae": 1275.2899999999997,
+              "se": 51671.1473,
+              "e": -1147.7299999999998,
+              "mae": 19.926406249999996,
+              "rmse": 28.414110518587414,
+              "bias": -17.933281249999997
+            }
+          },
+          "by_condition": {}
+        },
+        "windows": [
+          {
+            "n": 21,
+            "mae": 7.95,
+            "rmse": 10.575,
+            "bias": -1.933,
+            "by_station": {
+              "north_kensington": {
+                "n": 21,
+                "ae": 166.94,
+                "se": 2348.5946000000004,
+                "e": -40.60000000000001,
+                "mae": 7.949523809523809,
+                "rmse": 10.575341039192926,
+                "bias": -1.9333333333333338
+              }
+            },
+            "by_condition": {}
+          },
+          {
+            "n": 21,
+            "mae": 15.458,
+            "rmse": 21.127,
+            "bias": -15.4,
+            "by_station": {
+              "north_kensington": {
+                "n": 21,
+                "ae": 324.62,
+                "se": 9373.085400000002,
+                "e": -323.4,
+                "mae": 15.458095238095238,
+                "rmse": 21.126698748266374,
+                "bias": -15.399999999999999
+              }
+            },
+            "by_condition": {}
+          },
+          {
+            "n": 22,
+            "mae": 35.624,
+            "rmse": 42.613,
+            "bias": -35.624,
+            "by_station": {
+              "north_kensington": {
+                "n": 22,
+                "ae": 783.73,
+                "se": 39949.4673,
+                "e": -783.73,
+                "mae": 35.62409090909091,
+                "rmse": 42.61320073959157,
+                "bias": -35.62409090909091
+              }
+            },
+            "by_condition": {}
+          }
+        ]
+      },
+      "windows_won": 1,
+      "eligible": false,
+      "latency_ms": 5278,
+      "prompt_tokens": 1627,
+      "completion_tokens": 653,
+      "cost_usd": 0.00155,
+      "gate_status": null,
+      "reppo": null,
+      "note": "Model id and pricing verified against GET /v1/models on 2026-11-15.",
+      "response_id": "chatcmpl-Ekd48G1fFt1X526M6LEQrQjnTFcgI",
+      "finish_reason": "stop",
+      "cached_tokens": null,
+      "reasoning_tokens": 0,
+      "response_schema": [
+        "adjustment_rationale",
+        "current_params",
+        "new_params",
+        "proposed_param_changes",
+        "tune_set_diagnostics"
+      ]
+    },
+    {
+      "proposer": "open-weight",
+      "label": "Open-weight baseline (no SERV)",
+      "model": "google/gemma-3-27b-it",
+      "uses_serv": false,
+      "status": "ok",
+      "error": null,
+      "analysis": {
+        "what_went_wrong": "The model is systematically over-predicting PM2.5 levels, as indicated by the positive mean error of +2.72 ug/m3. Several individual errors are quite large (e.g., 8.8, 5.7, 8.27, 11.0, 11.57), suggesting the model struggles particularly during certain conditions. The errors are consistently positive, even with varying humidity and wind speeds.",
+        "pattern_discovered": "The model consistently overestimates PM2.5, even when humidity is high and wind speeds are moderate. This suggests the current coefficients for humidity, wind, and precipitation may be too negative, or the base scale is too high, or the bias is too positive. The large errors indicate a non-linear relationship or missing variables are contributing to the overestimation.",
+        "change_made": "I will slightly reduce the bias and scale to address the overall over-prediction. I will also slightly reduce the negative coefficients for humidity, wind, and precipitation, as they seem to be contributing to the overestimation when those variables are higher. The changes are small to avoid overcorrecting.",
+        "why_it_should_help": "Reducing the bias and scale will directly lower the predicted values. Less negative humidity, wind, and precipitation coefficients will reduce the penalty applied when those values are higher, leading to more accurate predictions. These small adjustments aim to bring the predictions closer to the actual values without drastically altering the model's behavior."
+      },
+      "params": {
+        "scale": 0.98,
+        "humidity_coef": -0.01,
+        "wind_coef": -0.12,
+        "precip_coef": -0.22,
+        "bias": 2.5
+      },
+      "holdout": {
+        "whole": {
+          "n": 64,
+          "mae": 20.323,
+          "rmse": 28.801,
+          "bias": -18.625,
+          "by_station": {
+            "north_kensington": {
+              "n": 64,
+              "ae": 1300.6799999999998,
+              "se": 53086.866399999984,
+              "e": -1191.9999999999998,
+              "mae": 20.323124999999997,
+              "rmse": 28.800734148628916,
+              "bias": -18.624999999999996
+            }
+          },
+          "by_condition": {}
+        },
+        "windows": [
+          {
+            "n": 21,
+            "mae": 7.894,
+            "rmse": 10.659,
+            "bias": -2.729,
+            "by_station": {
+              "north_kensington": {
+                "n": 21,
+                "ae": 165.76999999999998,
+                "se": 2385.7234999999996,
+                "e": -57.30999999999999,
+                "mae": 7.893809523809523,
+                "rmse": 10.658605957271378,
+                "bias": -2.7290476190476185
+              }
+            },
+            "by_condition": {}
+          },
+          {
+            "n": 21,
+            "mae": 16.123,
+            "rmse": 21.671,
+            "bias": -16.112,
+            "by_station": {
+              "north_kensington": {
+                "n": 21,
+                "ae": 338.58000000000004,
+                "se": 9862.478000000003,
+                "e": -338.36,
+                "mae": 16.122857142857146,
+                "rmse": 21.67122076680983,
+                "bias": -16.112380952380953
+              }
+            },
+            "by_condition": {}
+          },
+          {
+            "n": 22,
+            "mae": 36.197,
+            "rmse": 43.085,
+            "bias": -36.197,
+            "by_station": {
+              "north_kensington": {
+                "n": 22,
+                "ae": 796.3299999999997,
+                "se": 40838.66489999999,
+                "e": -796.3299999999997,
+                "mae": 36.196818181818166,
+                "rmse": 43.08483433877865,
+                "bias": -36.196818181818166
+              }
+            },
+            "by_condition": {}
+          }
+        ]
+      },
+      "windows_won": 1,
+      "eligible": false,
+      "latency_ms": 14610,
+      "prompt_tokens": 1668,
+      "completion_tokens": 377,
+      "cost_usd": null,
+      "gate_status": null,
+      "reppo": null,
+      "note": "Non-SERV control. SERV Reasoning cannot be disabled on the OpenServ endpoint, so the with/without arm uses a separate provider.",
+      "response_id": "chatcmpl-RHZ12YsDup44AA02m7XQYJoW",
+      "finish_reason": "stop",
+      "cached_tokens": null,
+      "reasoning_tokens": null,
+      "response_schema": [
+        "change_made",
+        "pattern_discovered",
+        "proposed_params",
+        "what_went_wrong",
+        "why_it_should_help"
+      ]
+    },
+    {
+      "proposer": "tabpfn",
+      "label": "TabPFN-Regressor (Prior Labs)",
+      "model": "tabpfn",
+      "uses_serv": false,
+      "status": "ok",
+      "error": null,
+      "analysis": null,
+      "params": null,
+      "holdout": {
+        "whole": {
+          "n": 64,
+          "mae": 26.856,
+          "rmse": 34.58,
+          "bias": -26.856,
+          "by_station": {
+            "north_kensington": {
+              "n": 64,
+              "ae": 1718.7614531272693,
+              "se": 76530.9377211869,
+              "e": -1718.7614531272693,
+              "mae": 26.855647705113583,
+              "rmse": 34.58028198111671,
+              "bias": -26.855647705113583
+            }
+          },
+          "by_condition": {}
+        },
+        "windows": [
+          {
+            "n": 21,
+            "mae": 13.114,
+            "rmse": 16.784,
+            "bias": -13.114,
+            "by_station": {
+              "north_kensington": {
+                "n": 21,
+                "ae": 275.3856863533873,
+                "se": 5915.516453096662,
+                "e": -275.3856863533873,
+                "mae": 13.113604112066062,
+                "rmse": 16.783660496782865,
+                "bias": -13.113604112066062
+              }
+            },
+            "by_condition": {}
+          },
+          {
+            "n": 21,
+            "mae": 25.023,
+            "rmse": 29.54,
+            "bias": -25.023,
+            "by_station": {
+              "north_kensington": {
+                "n": 21,
+                "ae": 525.4737714103738,
+                "se": 18324.815810274282,
+                "e": -525.4737714103738,
+                "mae": 25.022560543351137,
+                "rmse": 29.539977601205585,
+                "bias": -25.022560543351137
+              }
+            },
+            "by_condition": {}
+          },
+          {
+            "n": 22,
+            "mae": 41.723,
+            "rmse": 48.753,
+            "bias": -41.723,
+            "by_station": {
+              "north_kensington": {
+                "n": 22,
+                "ae": 917.901995363508,
+                "se": 52290.605457815975,
+                "e": -917.901995363508,
+                "mae": 41.722817971068544,
+                "rmse": 48.752904555810815,
+                "bias": -41.722817971068544
+              }
+            },
+            "by_condition": {}
+          }
+        ]
+      },
+      "windows_won": 0,
+      "eligible": false,
+      "latency_ms": null,
+      "prompt_tokens": null,
+      "completion_tokens": null,
+      "cost_usd": null,
+      "gate_status": "ineligible",
+      "reppo": null,
+      "note": "predictor, not a param proposer \u2014 ineligible to become the live strategy"
+    },
+    {
+      "proposer": "heuristic",
+      "label": "Deterministic heuristic",
+      "model": "heuristic",
+      "uses_serv": false,
+      "status": "ok",
+      "error": null,
+      "analysis": {
+        "what_went_wrong": "Mean bias +2.72 ug/m3 across 128 tune-set predictions.",
+        "pattern_discovered": "Largest systematic bias at station 'north_kensington' (mean error +2.72).",
+        "change_made": "Adjusted bias/humidity terms (heuristic fallback).",
+        "why_it_should_help": "Bias correction counters systematic under/over-prediction."
+      },
+      "params": {
+        "scale": 0.6541,
+        "humidity_coef": -0.03,
+        "wind_coef": -0.15,
+        "precip_coef": -0.25,
+        "bias": 4.6881
+      },
+      "holdout": {
+        "whole": {
+          "n": 64,
+          "mae": 27.539,
+          "rmse": 35.248,
+          "bias": -27.539,
+          "by_station": {
+            "north_kensington": {
+              "n": 64,
+              "ae": 1762.4700000000003,
+              "se": 79515.5397,
+              "e": -1762.4700000000003,
+              "mae": 27.538593750000004,
+              "rmse": 35.24812488363742,
+              "bias": -27.538593750000004
+            }
+          },
+          "by_condition": {}
+        },
+        "windows": [
+          {
+            "n": 21,
+            "mae": 12.481,
+            "rmse": 16.046,
+            "bias": -12.481,
+            "by_station": {
+              "north_kensington": {
+                "n": 21,
+                "ae": 262.09999999999997,
+                "se": 5406.757600000001,
+                "e": -262.09999999999997,
+                "mae": 12.48095238095238,
+                "rmse": 16.045704958618916,
+                "bias": -12.48095238095238
+              }
+            },
+            "by_condition": {}
+          },
+          {
+            "n": 21,
+            "mae": 25.291,
+            "rmse": 29.539,
+            "bias": -25.291,
+            "by_station": {
+              "north_kensington": {
+                "n": 21,
+                "ae": 531.12,
+                "se": 18324.0764,
+                "e": -531.12,
+                "mae": 25.291428571428572,
+                "rmse": 29.53938162295661,
+                "bias": -25.291428571428572
+              }
+            },
+            "by_condition": {}
+          },
+          {
+            "n": 22,
+            "mae": 44.057,
+            "rmse": 50.355,
+            "bias": -44.057,
+            "by_station": {
+              "north_kensington": {
+                "n": 22,
+                "ae": 969.25,
+                "se": 55784.70569999999,
+                "e": -969.25,
+                "mae": 44.05681818181818,
+                "rmse": 50.35542116703117,
+                "bias": -44.05681818181818
+              }
+            },
+            "by_condition": {}
+          }
+        ]
+      },
+      "windows_won": 0,
+      "eligible": false,
+      "latency_ms": null,
+      "prompt_tokens": null,
+      "completion_tokens": null,
+      "cost_usd": null,
+      "gate_status": null,
+      "reppo": null,
+      "note": null
+    },
+    {
+      "proposer": "serv-ultra",
+      "label": "SERV Ultra (frontier-tier + SERV Reasoning)",
+      "model": "serv-ultra",
+      "uses_serv": true,
+      "status": "error",
+      "error": "unusable output",
+      "analysis": {},
+      "params": null,
+      "holdout": null,
+      "windows_won": null,
+      "eligible": false,
+      "latency_ms": 19062,
+      "prompt_tokens": 1722,
+      "completion_tokens": 689,
+      "cost_usd": 0.033585,
+      "gate_status": null,
+      "reppo": null,
+      "note": "Expensive arm of the same-endpoint comparison. 26x input / 18.6x output vs serv-nano.",
+      "response_id": "msg_011Ch5WSg2ufbYLSGVaxgPHa",
+      "finish_reason": "stop",
+      "cached_tokens": null,
+      "reasoning_tokens": null,
+      "response_schema": [
+        "bias",
+        "humidity_coef",
+        "precip_coef",
+        "reasoning",
+        "wind_coef"
+      ]
+    }
+  ],
+  "id": 4
+}

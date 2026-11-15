@@ -7,7 +7,7 @@
 **Vision, market and roadmap:** [`docs/vision.md`](docs/vision.md) ·
 **Evidence (42 sources):** [`docs/research/positioning-2026-11.md`](docs/research/positioning-2026-11.md) ·
 **OpenServ Hackathon 2 submission:** [`SUBMISSION-OPENSERV.md`](SUBMISSION-OPENSERV.md) ·
-[demo video](docs/aeroloop-openserv-demo.mp4)
+[demo video](https://youtu.be/LqHMPDhwT1o)
 
 ## Why it matters
 
@@ -87,8 +87,7 @@ uvicorn main:app --reload --port 8000
 Then open `http://localhost:8000` (serves the dashboard), `http://localhost:8000/scene`
 (**The Ghost Over London** — a spectral 3D render of inner London built from real
 OSM geometry, with modelled PM2.5 as wind-advected haze and the agent's errors
-rising off the monitors as wisps; press "play the film" — a captured run lives
-at `docs/ghost-film.mp4` / `.gif`), or `http://localhost:8000/docs`.
+rising off the monitors as wisps; press "play the film"), or `http://localhost:8000/docs`.
 
 **One-click demo:** `POST /demo-day` simulates 24h of predictions + delayed ground
 truth across all 4 stations, fully offline. Then `POST /self-improve` runs the

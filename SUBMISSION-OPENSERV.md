@@ -1,7 +1,7 @@
 # AeroLoop — OpenServ Hackathon 2 submission
 
 **Track: Open** ("Bring your own idea and build it on SERV Reasoning. Any domain, any stack.")
-**Repo:** https://github.com/udirobert/aeroloop · **Demo video:** [`docs/aeroloop-openserv-demo.mp4`](docs/aeroloop-openserv-demo.mp4) (~65 s, includes a live tournament run against SERV)
+**Repo:** https://github.com/udirobert/aeroloop · **Demo video:** [https://youtu.be/LqHMPDhwT1o](https://youtu.be/LqHMPDhwT1o) (~78 s, narrated with word-synced captions)
 **Live demo:** `cd backend && uvicorn main:app --port 8000` → http://localhost:8000
 
 ## The project
@@ -109,6 +109,44 @@ narrower and more useful: **the small SERV tier is the cost-effective one; upgra
 the tier bought no accuracy here.** That is exactly the kind of claim an auditor
 should make about its own tooling.
 
+### C. The 26-site stress test — where the honest answer is "not yet"
+
+Milestone 2a widened the audit from one monitor to **26 LAQN reference sites**
+qualified by probing their data (≥75% of hours present), over 40 days
+(2026-10-01 → 2026-11-08): **22,309 matched pairs**, 7,437 of them on the
+chronological holdout. Evidence:
+[`submission/evidence/real-audit-multisite.json`](submission/evidence/real-audit-multisite.json).
+
+- Raw CAMS under-reads at **all 26 sites** (holdout bias negative everywhere;
+  overall holdout MAE 10.590 µg/m³, bias −7.068).
+- The strategy can now *scale* CAMS as well as shift it. The multisite tournament
+  winner (open-weight) cuts overall holdout MAE to 10.156 — **4.1%**, better at
+  22 of 26 sites. Scored against US EPA 24-hour targets by the trust engine
+  ([`backend/trust.py`](backend/trust.py), indicative, not certification), every
+  site still fails: an offset-and-scale correction cannot repair a model that
+  under-responds by roughly half. We publish that failure rather than hide it.
+- On this prompt **both SERV tiers were refused by the content filter** and still
+  billed ($0.001448 nano, $0.034892 ultra):
+  [`submission/evidence/tournament-multisite-scale-run1.json`](submission/evidence/tournament-multisite-scale-run1.json).
+  The refusals are recorded as named failure modes, not retried with the filter
+  disabled.
+
+This is the product thesis in one table: cheap air-quality evidence is widely
+unfit, and the scarce good is an independent, holdout-proven statement of *how*
+unfit — including when our own correction is not enough.
+
+### D. The Reppo soundness gate — wired, verified live, not yet triggered
+
+Every accuracy-eligible proposal is sent to Reppo for a blind peer review
+(proposer name and model are hidden). The gate is verified against the live API
+(one standalone evaluation on 2026-11-15: `accept`, score 100, routed to
+`review` at medium confidence, about 90 s). In the recorded tournaments it has
+not yet fired on a real proposal: runs 1–4 predate the key, and a live run with
+the key ([`submission/evidence/tournament-real-run5-reppo.json`](submission/evidence/tournament-real-run5-reppo.json))
+produced no accuracy-eligible proposal (best was serv-nano at 19.926 vs the
+incumbent's 19.747), so the change was recorded as a ghost and nothing was sent
+for review.
+
 ## Reliability findings (engineered around, not hidden)
 
 - A system/developer message is **mandatory**; omitting it returns HTTP 400.
@@ -164,6 +202,14 @@ JSON for real runs 1–3 and synthetic run 4, plus the per-strategy holdout scor
 ## Deliverables
 
 - Public repo: https://github.com/udirobert/aeroloop
-- Demo video: `docs/aeroloop-openserv-demo.mp4`
+- Demo video: https://youtu.be/LqHMPDhwT1o — 78 s landscape film. Narration:
+  ElevenLabs `eleven_v4`, shared-library voice "Maria – Warm, Sophisticated
+  Londoner"; captions are word-synced from the TTS character alignment; ambient
+  bed from ElevenLabs sound-generation. Motion-design scenes are interleaved with
+  real dashboard footage, and every live-action segment carries an on-screen
+  provenance tag (real LAQN KC1 ratified hours vs the synthetic-labelled cost
+  audit), so no modelled or synthetic number is ever presented as a measurement.
+  The earlier silent captioned cut stays in git history (`b60ab16`); per
+  `AGENTS.md` no additional video files are tracked.
 - This write-up: `SUBMISSION-OPENSERV.md`
 - X post: [`submission/x-post.md`](submission/x-post.md) (link added to the form on posting)

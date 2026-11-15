@@ -8,7 +8,7 @@ Form: https://www.openserv.ai/hackathon-2 (submission closes 2026-11-15 23:59 UT
 
 **Public repository:** https://github.com/udirobert/aeroloop
 
-**Demo link or video:** https://github.com/udirobert/aeroloop/blob/main/docs/aeroloop-openserv-demo.mp4
+**Demo link or video:** https://youtu.be/LqHMPDhwT1o
 
 **X post link:** _(paste the URL of the posted main tweet from `x-post.md`)_
 

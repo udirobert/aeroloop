@@ -62,8 +62,7 @@ builds a day's Merkle batch into `anchors/`, stamps OpenTimestamps and anchors o
 Base. Tests and smoke runs must set `ANCHORS_DIR` and `DATABASE_PATH` to temp
 paths so nothing lands in the real `anchors/` or `data/`.
 
-Media: video files are gitignored. The only tracked videos are the ones the
-README and submissions link to (`docs/aeroloop-openserv-demo.mp4`,
-`docs/ghost-film.mp4`, `docs/ghost-film.gif`); don't add others.
+Media: video files are never committed (gitignored); demo videos are published
+on YouTube and linked from the docs.
 
 `video/` is a separate HyperFrames project with its own `AGENTS.md`.
