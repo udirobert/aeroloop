@@ -57,6 +57,14 @@ npm install && npm run typecheck
 Demo loop: `POST /demo-day` (offline, 24h of predictions + delayed truth), then
 `POST /tournament` (or the older single-proposer `POST /self-improve`).
 
+Netherlands (Milestone 2b): `python reference_sites.py --network luchtmeetnet
+--start ... --end ...` qualifies RIVM sites empirically (set `PROBE_CONCURRENCY=2`
+— the public API 429s above that); `python colocation.py --refresh --country NL`
+lists sensor.community NL (feed duplicates each sensor ~2× — count unique uids);
+`python sensor_audit.py --species PM25|PM10 --start ... --end ... --out
+../submission/evidence/<file>.json` scores each verified candidate vs its RIVM
+reference.
+
 Anchoring: `POST /anchors/build?date=YYYY-MM-DD` (or `python anchor_daily.py`)
 builds a day's Merkle batch into `anchors/`, stamps OpenTimestamps and anchors on
 Base. Tests and smoke runs must set `ANCHORS_DIR` and `DATABASE_PATH` to temp

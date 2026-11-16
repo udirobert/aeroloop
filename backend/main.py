@@ -329,6 +329,148 @@ def colocation_report(species: str = "PM25"):
     return colocation.colocation_report(species)
 
 
+@app.get("/sensor-trust")
+def sensor_trust(species: Optional[str] = None):
+    """Latest sensor-vs-reference audit per (uid, species), with coords."""
+    sensors = {s["uid"]: s for s in db.get_sensors()}
+    refs = {r["code"]: r for r in db.get_reference_sites()}
+    out = []
+    for a in db.get_sensor_audits(species=species):
+        s = sensors.get(a["uid"]) or {}
+        ref = refs.get(a["reference"]) or {}
+        out.append({**a,
+                    "sensor_lat": s.get("lat"), "sensor_lon": s.get("lon"),
+                    "ref_lat": ref.get("lat"), "ref_lon": ref.get("lon"),
+                    "ref_network": ref.get("network"),
+                    "ref_name": ref.get("name")})
+    return out
+
+
+@app.get("/sensors")
+def sensors():
+    """Listed low-cost sensors (uid, coords, indoor flag, source)."""
+    return [{"uid": s["uid"], "source": s["source"], "lat": s.get("lat"),
+             "lon": s.get("lon"), "indoor": s["indoor"]}
+            for s in db.get_sensors()]
+
+
+@app.get("/map-data")
+def map_data():
+    """Coverage-map payload in one slim response.
+
+    Replaces three calls (reference-sites + sensors + sensor-trust) with
+    exactly the fields the map draws: qualifying refs deduped by code, listed
+    sensor coords, and audit edges for every species so the client can
+    re-tint on species change without refetching.
+    """
+    sensors = {s["uid"]: s for s in db.get_sensors()}
+    refs = {}
+    for r in db.get_reference_sites():
+        if r["qualifies"]:
+            refs.setdefault(r["code"], r)
+    audits = []
+    for a in db.get_sensor_audits():
+        s = sensors.get(a["uid"]) or {}
+        ref = refs.get(a["reference"]) or {}
+        audits.append({
+            "uid": a["uid"], "species": a["species"],
+            "reference": a["reference"], "distance_m": a["distance_m"],
+            "status": (a["score"] or {}).get("status") or "unknown",
+            "sensor_lat": s.get("lat"), "sensor_lon": s.get("lon"),
+            "ref_lat": ref.get("lat"), "ref_lon": ref.get("lon")})
+    return {
+        "references": [{"code": r["code"], "name": r.get("name"),
+                        "network": r["network"], "lat": r.get("lat"),
+                        "lon": r.get("lon")} for r in refs.values()],
+        "sensors": [{"uid": s["uid"], "lat": s.get("lat"), "lon": s.get("lon"),
+                     "indoor": s["indoor"]} for s in sensors.values()],
+        "audits": audits,
+    }
+
+
+@app.get("/commitments/recent")
+def commitments_recent(limit: int = 8):
+    """Recent committed predictions, each with its verification view."""
+    limit = max(1, min(limit, 50))
+    preds = [p for p in reversed(db.get_predictions())
+             if p.get("commit_hash")]
+    out = []
+    for p in preds[:limit]:
+        view = commitments.prediction_commitment(p["id"])
+        if view:
+            out.append({
+                "prediction_id": p["id"],
+                "station_id": p["station_id"],
+                "timestamp": p["timestamp"],
+                "committed_at": p["committed_at"],
+                "commit_hash": p["commit_hash"],
+                "hash_matches": view.get("hash_matches"),
+                "anchor": view.get("anchor"),
+            })
+    return out
+
+
+@app.get("/config")
+def config():
+    """Public client config: basemap tile URL.
+
+    CARTO_API_KEY stays server-side; the browser only ever receives the
+    rendered tile URL (the key is visible in tile requests regardless — the
+    protection is keeping it out of source and restricting it in the CARTO
+    dashboard). Falls back to the free keyless tiles when unset.
+    """
+    key = os.environ.get("CARTO_API_KEY")
+    if key:
+        url = ("https://basemaps.cartocdn.com/rastertiles/dark_all/"
+               f"{{z}}/{{x}}/{{y}}{{r}}.png?key={key}")
+    else:
+        url = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+    return {"basemap_url": url}
+
+
+@app.get("/overview")
+def overview():
+    """Coverage summary: reference networks, listed sensors, audit tallies.
+
+    Location-agnostic view of what the engine can currently see and has
+    scored — every number derived from the DB, nothing hardcoded.
+    """
+    refs = db.get_reference_sites()
+    networks: Dict[str, Any] = {}
+    for r in refs:
+        net = networks.setdefault(
+            r["network"], {"species": {}, "probed": 0, "qualifying": 0})
+        net["probed"] += 1
+        net["qualifying"] += int(bool(r["qualifies"]))
+        sp = net["species"].setdefault(
+            r["species"], {"probed": 0, "qualifying": 0})
+        sp["probed"] += 1
+        sp["qualifying"] += int(bool(r["qualifies"]))
+    sensors: Dict[str, Any] = {}
+    for s in db.get_sensors():
+        src = sensors.setdefault(s["source"], {"total": 0, "indoor": 0})
+        src["total"] += 1
+        src["indoor"] += int(bool(s["indoor"]))
+    audits: Dict[str, Any] = {}
+    for a in db.get_sensor_audits():
+        sp = audits.setdefault(a["species"], {"scored": 0, "statuses": {}})
+        st = (a["score"] or {}).get("status") or "unknown"
+        sp["scored"] += 1
+        sp["statuses"][st] = sp["statuses"].get(st, 0) + 1
+    strats = db.get_strategies()
+    engine = {
+        "strategies": len(strats),
+        "strategies_rejected": sum(
+            1 for s in strats if "rejected" in s["version"]),
+        "tournament_runs": len(db.get_tournament_runs(limit=1000)),
+        "committed_predictions": sum(
+            1 for p in db.get_predictions() if p.get("commit_hash")),
+        "anchors": len(db.get_anchors(limit=1000)),
+    }
+    return {"reference_networks": networks, "sensors": sensors,
+            "sensor_audits": audits, "engine": engine}
+
+
 @app.get("/errors")
 def errors():
     return db.get_errors()

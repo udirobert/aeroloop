@@ -323,6 +323,142 @@ def test_sensor_community_parsing():
     assert indoor["sc:777"] == 1
     assert indoor["sc:77668"] == 0
 
+    res = sensor_community.list_country_pm_sensors("NL", client=client)
+    assert {s["uid"] for s in res["sensors"]} == {"sc:77668", "sc:777"}
+
+
+def test_sensor_community_history_hourly_means():
+    """Archive CSVs -> hourly means; P1->PM10, P2->PM25; missing days skipped."""
+    csv_day1 = ("sensor_id;sensor_type;location;lat;lon;timestamp;"
+                "P1;durP1;ratioP1;P2;durP2;ratioP2\n"
+                "1;SDS011;1;52.0;5.0;2026-11-01T00:01:00;10.0;;;4.0;;;\n"
+                "1;SDS011;1;52.0;5.0;2026-11-01T00:31:00;20.0;;;6.0;;;\n"
+                "1;SDS011;1;52.0;5.0;2026-11-01T01:01:00;30.0;;;;;;\n")
+
+    def handler(req):
+        if "2026-11-01_sds011_sensor_1.csv" in req.url.path:
+            return httpx.Response(200, text=csv_day1)
+        return httpx.Response(404)
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    rows = sensor_community.fetch_sensor_history(
+        1, "SDS011", datetime(2026, 11, 1), datetime(2026, 11, 2),
+        client=client)
+    by = {(r["timestamp"], r["species"]): r["value"] for r in rows}
+    assert by[("2026-11-01 00:00:00", "PM10")] == 15.0   # mean of 10, 20
+    assert by[("2026-11-01 00:00:00", "PM25")] == 5.0
+    assert by[("2026-11-01 01:00:00", "PM10")] == 30.0
+    assert ("2026-11-01 01:00:00", "PM25") not in by    # empty cell skipped
+    assert rows[0]["uid"] == "sc:1"
+    assert rows[0]["flags"]["days_fetched"] == 1        # day 2 was a 404
+
+
+def test_sensor_audit_persistence(temp_db):
+    """save/get sensor_audits: latest run wins per (uid, species)."""
+    base = {"uid": "sc:1", "species": "PM25", "reference": "NL1",
+            "distance_m": 7.3, "sensor_type": "SDS011",
+            "window_start": "2026-11-01", "window_end": "2026-11-09",
+            "sensor_hours": 169, "reference_hours": 200,
+            "paired_hours": 169, "score": {"status": "drifting"},
+            "audited_at": "2026-11-16T10:00:00Z"}
+    db.save_sensor_audit(base)
+    db.save_sensor_audit({**base, "audited_at": "2026-11-16T12:00:00Z",
+                          "score": {"status": "fit"}})
+    db.save_sensor_audit({**base, "species": "PM10",
+                          "score": {"status": "unfit"}})
+    rows = db.get_sensor_audits()
+    assert len(rows) == 2                       # latest per (uid, species)
+    pm25 = [r for r in rows if r["species"] == "PM25"][0]
+    assert pm25["score"]["status"] == "fit"     # newer audited_at wins
+    assert db.get_sensor_audits(species="PM10")[0]["score"]["status"] == "unfit"
+
+
+# ---------------------------------------------------------------------------
+# luchtmeetnet (RIVM reference network, NL)
+# ---------------------------------------------------------------------------
+
+LM_MEAS_ROW = {"station_number": "NL49012", "value": 22.6, "formula": "PM10",
+               "timestamp_measured": "2026-11-14T23:00:00+00:00",
+               "timestamp_measured_start": "2026-11-14T22:00:00+00:00",
+               "timestamp_measured_end": "2026-11-14T23:00:00+00:00"}
+
+
+def test_luchtmeetnet_parsing():
+    from sensors import luchtmeetnet as lm
+
+    def handler(req):
+        path = req.url.path
+        if path.endswith("/stations"):
+            return httpx.Response(200, json={
+                "pagination": {"last_page": 1},
+                "data": [{"number": "NL49012",
+                          "location": "Amsterdam-Van Diemenstraat"}]})
+        if path.endswith("/stations/NL49012"):
+            return httpx.Response(200, json={"data": {
+                "type": "Traffic", "components": ["PM10", "PM25"],
+                "geometry": {"type": "point",
+                             "coordinates": [4.8878, 52.39]},
+                "municipality": "Amsterdam",
+                "organisation": "GGD Amsterdam",
+                "location": "Amsterdam-Van Diemenstraat"}})
+        if path.endswith("/measurements"):
+            assert req.url.params["formula"] == "PM10"
+            null_row = {**LM_MEAS_ROW, "value": None,
+                        "timestamp_measured_start":
+                            "2026-11-14T21:00:00+00:00"}
+            return httpx.Response(200, json={
+                "pagination": {"last_page": 1},
+                "data": [LM_MEAS_ROW, null_row]})
+        return httpx.Response(404)
+
+    async def go():
+        async with httpx.AsyncClient(
+                transport=httpx.MockTransport(handler)) as c:
+            stations = await lm.list_stations(client=c)
+            assert stations[0]["number"] == "NL49012"
+            st = await lm.fetch_station("NL49012", client=c)
+            assert st["lat"] == pytest.approx(52.39)
+            assert st["site_type"] == "Traffic"
+            m = await lm.fetch_measurements(
+                "NL49012", "PM10", datetime(2026, 11, 14),
+                datetime(2026, 11, 15), client=c)
+            # keyed on measurement-start hour; null row skipped
+            assert m == {"2026-11-14 22:00:00": 22.6}
+
+    asyncio.run(go())
+
+
+def test_discovery_luchtmeetnet_network(temp_db, monkeypatch):
+    """NL discovery writes network=Luchtmeetnet and qualifies empirically."""
+    async def sites():
+        return [
+            {"code": "NL49012", "name": "Amsterdam-VD", "lat": 52.39,
+             "lon": 4.89, "date_closed": None},
+            {"code": "NL99999", "name": "Empty", "lat": 52.0,
+             "lon": 5.0, "date_closed": None},
+        ]
+
+    async def meas(code, species, start, end):
+        if (code, species) == ("NL49012", "PM25"):
+            base = datetime(2026, 11, 1)
+            return {(base + timedelta(hours=i)).strftime("%Y-%m-%d %H:00:00"):
+                    9.0 for i in range(96)}
+        return {}
+
+    monkeypatch.setattr(reference_sites, "_luchtmeetnet_sites", sites)
+    from sensors import luchtmeetnet as lm
+    monkeypatch.setattr(lm, "fetch_measurements", meas)
+
+    rows = asyncio.run(reference_sites.discover_async(
+        datetime(2026, 11, 1, tzinfo=UTC),
+        datetime(2026, 11, 4, tzinfo=UTC),
+        network="luchtmeetnet"))
+    by = {(r["code"], r["species"]): r for r in rows}
+    assert by[("NL49012", "PM25")]["qualifies"] == 1
+    assert by[("NL49012", "PM25")]["network"] == "Luchtmeetnet"
+    assert by[("NL99999", "PM25")]["qualifies"] == 0
+    assert by[("NL99999", "PM10")]["valid_hours"] == 0
+
 
 # ---------------------------------------------------------------------------
 # colocation
@@ -376,6 +512,13 @@ def test_endpoints(temp_db, monkeypatch):
         r = c.get("/reference-sites?species=PM25&qualifying=true")
         assert r.status_code == 200
         assert [x["code"] for x in r.json()] == ["KC1"]
+
+        r = c.get("/map-data")
+        assert r.status_code == 200
+        md = r.json()
+        assert [x["code"] for x in md["references"]] == ["KC1"]
+        assert [x["uid"] for x in md["sensors"]] == ["sc:1"]
+        assert md["audits"] == []
 
         r = c.get("/trust?subject=cams_raw")
         assert r.status_code == 200

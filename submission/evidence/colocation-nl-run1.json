@@ -1,0 +1,188 @@
+{
+  "generated_at": "2026-11-16T15:14:19.552547Z",
+  "location": "Netherlands",
+  "reference_network": "RIVM Luchtmeetnet (public API, no key)",
+  "sensor_source": "sensor.community filter/country=NL (public API, no key)",
+  "reference_probe_window": "2026-11-01..2026-11-09 (216h expected)",
+  "reference_min_coverage": 0.75,
+  "note": "sensor.community country feed duplicates each sensor ~2x; counts are unique uids",
+  "qualifying_reference_sites": {
+    "PM25": 74,
+    "PM10": 86
+  },
+  "colocation": {
+    "PM25": {
+      "tiers": {
+        "verified_candidate": 11,
+        "no_reference_nearby": 1374,
+        "excluded_indoor": 41
+      },
+      "verified_candidates": [
+        {
+          "uid": "sc:89661",
+          "source": "sensor_community",
+          "nearest_reference": "NL49680",
+          "distance_m": 7.3,
+          "tier": "verified_candidate"
+        },
+        {
+          "uid": "sc:83819",
+          "source": "sensor_community",
+          "nearest_reference": "NL50011",
+          "distance_m": 64.6,
+          "tier": "verified_candidate"
+        },
+        {
+          "uid": "sc:58553",
+          "source": "sensor_community",
+          "nearest_reference": "NL10937",
+          "distance_m": 194.5,
+          "tier": "verified_candidate"
+        },
+        {
+          "uid": "sc:93588",
+          "source": "sensor_community",
+          "nearest_reference": "NL01493",
+          "distance_m": 206.3,
+          "tier": "verified_candidate"
+        },
+        {
+          "uid": "sc:83736",
+          "source": "sensor_community",
+          "nearest_reference": "NL50011",
+          "distance_m": 219.4,
+          "tier": "verified_candidate"
+        },
+        {
+          "uid": "sc:13607",
+          "source": "sensor_community",
+          "nearest_reference": "NL50007",
+          "distance_m": 266.8,
+          "tier": "verified_candidate"
+        },
+        {
+          "uid": "sc:93833",
+          "source": "sensor_community",
+          "nearest_reference": "NL50003",
+          "distance_m": 314.6,
+          "tier": "verified_candidate"
+        },
+        {
+          "uid": "sc:83702",
+          "source": "sensor_community",
+          "nearest_reference": "NL10450",
+          "distance_m": 316.8,
+          "tier": "verified_candidate"
+        },
+        {
+          "uid": "sc:95790",
+          "source": "sensor_community",
+          "nearest_reference": "NL10445",
+          "distance_m": 360.7,
+          "tier": "verified_candidate"
+        },
+        {
+          "uid": "sc:91608",
+          "source": "sensor_community",
+          "nearest_reference": "NL01495",
+          "distance_m": 391.0,
+          "tier": "verified_candidate"
+        },
+        {
+          "uid": "sc:99313",
+          "source": "sensor_community",
+          "nearest_reference": "NL49570",
+          "distance_m": 433.6,
+          "tier": "verified_candidate"
+        }
+      ]
+    },
+    "PM10": {
+      "tiers": {
+        "verified_candidate": 11,
+        "no_reference_nearby": 1374,
+        "excluded_indoor": 41
+      },
+      "verified_candidates": [
+        {
+          "uid": "sc:89661",
+          "source": "sensor_community",
+          "nearest_reference": "NL49680",
+          "distance_m": 7.3,
+          "tier": "verified_candidate"
+        },
+        {
+          "uid": "sc:83819",
+          "source": "sensor_community",
+          "nearest_reference": "NL50011",
+          "distance_m": 64.6,
+          "tier": "verified_candidate"
+        },
+        {
+          "uid": "sc:58553",
+          "source": "sensor_community",
+          "nearest_reference": "NL10937",
+          "distance_m": 194.5,
+          "tier": "verified_candidate"
+        },
+        {
+          "uid": "sc:93588",
+          "source": "sensor_community",
+          "nearest_reference": "NL01493",
+          "distance_m": 206.3,
+          "tier": "verified_candidate"
+        },
+        {
+          "uid": "sc:83736",
+          "source": "sensor_community",
+          "nearest_reference": "NL50011",
+          "distance_m": 219.4,
+          "tier": "verified_candidate"
+        },
+        {
+          "uid": "sc:13607",
+          "source": "sensor_community",
+          "nearest_reference": "NL50007",
+          "distance_m": 266.8,
+          "tier": "verified_candidate"
+        },
+        {
+          "uid": "sc:93833",
+          "source": "sensor_community",
+          "nearest_reference": "NL50003",
+          "distance_m": 314.6,
+          "tier": "verified_candidate"
+        },
+        {
+          "uid": "sc:83702",
+          "source": "sensor_community",
+          "nearest_reference": "NL10450",
+          "distance_m": 316.8,
+          "tier": "verified_candidate"
+        },
+        {
+          "uid": "sc:95790",
+          "source": "sensor_community",
+          "nearest_reference": "NL10445",
+          "distance_m": 360.7,
+          "tier": "verified_candidate"
+        },
+        {
+          "uid": "sc:91608",
+          "source": "sensor_community",
+          "nearest_reference": "NL01495",
+          "distance_m": 391.0,
+          "tier": "verified_candidate"
+        },
+        {
+          "uid": "sc:99313",
+          "source": "sensor_community",
+          "nearest_reference": "NL49570",
+          "distance_m": 433.6,
+          "tier": "verified_candidate"
+        }
+      ]
+    }
+  },
+  "unique_pm_sensors_total": 1426
+}

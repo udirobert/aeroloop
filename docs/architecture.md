@@ -11,6 +11,11 @@
   says which path ran. Also gridded field fetchers for the scene:
   `fetch_wind_field()` / `fetch_aq_field()` — one multi-coordinate Open-Meteo
   call each, mem-cache → `data/cache/` → labelled synthetic fallback.
+- **frontend/index.html** — Pristine Air dashboard: verdict-first single column,
+  guided ①②③ tour, pulsing audit map (unaudited dimmed), pair cards → scatter
+  proof, sensor passports (`#/sensor/{uid}`), certificates (`?certificate=`),
+  embed badges (`?embed=`), tournament lanes + ghost graveyard. Light/dark via
+  `?theme=` + toggle. No backend changes; all integrity rules hold.
 - **frontend/scene.html + scene.js** — "The Ghost Over London": spectral 3D
   scene (vendored three.js, no build step, no CDN). Real OSM buildings/roads
   as wireframe traces, modelled PM2.5 as wind-advected haze, station beacons,
@@ -20,19 +25,49 @@
 - **prediction.py** — `v1-baseline` (model + humidity correction) and `v2-improved`
   (model + humidity/wind/precip + bias). Params are versioned and agent-editable.
 - **evaluation.py** — MAE, RMSE, bias over matched prediction/reading pairs; breakdown by station.
-- **agent.py** — self-improvement loop:
-  1. Split matched pairs chronologically: tune (earlier ~2/3) / holdout (later ~1/3).
-  2. Compute incumbent-strategy errors on the **tune** split only.
-  3. Ask the open-weight LLM for an analysis AND proposed params (clamped to sane
-     bounds; deterministic heuristic if every endpoint fails or returns junk).
-  4. Score incumbent and candidate on the **holdout** split — data the tuning step
-     never saw. A TabPFN foundation-model challenger runs the same gate.
-  5. Keep the candidate only if holdout MAE improves; otherwise save it anyway as
-     `<v>-rejected` — rejected ideas stay in the record (the ghosts).
-- **db.py** — SQLite (predictions, ground_readings, errors, strategies).
+- **agent.py** — self-improvement loop (`/self-improve`) and the correction
+  **tournament** (`/tournament`): multiple proposers (SERV Nano, SERV Ultra,
+  hosted open-weight models, deterministic heuristic; TabPFN benchmark-only)
+  get identical prompt and tune data, are scored on the same hidden holdout
+  across rolling windows, with cost/latency/tokens recorded per proposal.
+  Accuracy gate = holdout; soundness gate = Reppo peer evaluation.
+- **reppo.py** — blind peer-evaluation gate: proposals that pass accuracy are
+  scored for physical plausibility (catches quoting test values, overfit).
+- **proposers.json** — proposer registry (endpoints, models, SERV on/off).
+- **commitments.py** — SHA-256 commit-before-truth hash per prediction at save
+  time; `commit_kind` ∈ live / simulated / hindcast (hindcast never claims
+  pre-truth). `anchor_daily.py` builds daily Merkle batches → OpenTimestamps
+  + Base (`base_anchor.py`); `/anchors/*` endpoints serve proofs.
+- **reference_sites.py** — empirical reference-site qualification. Probes every
+  open site × species against the data endpoint (never metadata — it's wrong
+  both ways); ≥75% hourly coverage over the window qualifies. Networks:
+  `laqn` (default) and `luchtmeetnet` (RIVM, NL; `--network` CLI flag).
+- **trust.py** — subject-agnostic trust engine: daily-mean regression vs
+  reference, US EPA 24-hr sensor targets (indicative, not certification) +
+  AeroLoop drift heuristic → fit / drifting / unfit / insufficient_evidence.
+  Subjects: `cams_raw`, `incumbent`.
+- **sensors/** — low-cost sensor adapters (listings + readings):
+  `breathe_london.py` (400+ Clarity nodes, key-gated, OGL v3 attribution is
+  mandatory on anything returning its data; `ScaledValue` = operator-corrected),
+  `sensor_community.py` (open, no key; area or whole-country listing),
+  `luchtmeetnet.py` (RIVM reference API — used by reference_sites, not a
+  low-cost source).
+- **colocation.py** — tiers each listed sensor: verified_candidate (≤500 m of a
+  qualifying reference), no_reference_nearby, excluded_indoor.
+- **sensor_audit.py** — end-to-end sensor-vs-reference audit: pulls
+  archive.sensor.community history for each verified_candidate (sub-hourly CSVs
+  → UTC hourly means; P1→PM10, P2→PM25), aligns with reference network hours,
+  feeds triples to trust.score_triples, persists readings, writes evidence JSON.
+- **db.py** — SQLite: predictions (+commitment columns), ground_readings,
+  errors, strategies (incl. `-rejected`), tournament_runs/proposals, anchors,
+  reference_sites, sensors, sensor_readings, sensor_audits.
 - **main.py** — FastAPI: /predict, /ground-truth (LAQN-first), /evaluate,
-  /self-improve, /demo-day, /strategies, /errors, /wind-field, /aq-field,
-  /scene-state, dashboard (/), scene (/scene).
+  /self-improve, /tournament (+/tournament/runs), /demo-day, /strategies,
+  /errors, /trust, /reference-sites, /colocation, /sensor-trust, /sensors,
+  /overview, /config (basemap tile URL), /map-data (slim aggregate for the
+  coverage map), /anchors (+build, upgrade-ots), /commitments/prediction/{id},
+  /commitments/recent, /wind-field, /aq-field, /fields-timeline, /scene-state,
+  dashboard (/), scene (/scene), /health.
 
 ## Data flow
 
@@ -78,7 +113,7 @@ ground truth arrives  -->  save reading  -->  matched pair
 ## TrueForge harness (Stranger Builds)
 
 Alongside the backend, a second, self-contained self-improvement loop for the
-Stranger Builds TrueForge challenge — documented in `stranger-builds.md`:
+Stranger Builds TrueForge challenge — documented in `history.md`:
 
 - `agent/` — the `pm25-forecaster` TrueForge agent: `agent.json`, its
   `instructions.md`, and `skills/pm25-strategy/SKILL.md`, the playbook the

@@ -149,6 +149,21 @@ def init_db() -> None:
             flags TEXT,
             PRIMARY KEY (uid, timestamp, species)
         );
+        CREATE TABLE IF NOT EXISTS sensor_audits (
+            uid TEXT NOT NULL,
+            species TEXT NOT NULL,
+            reference TEXT NOT NULL,
+            distance_m REAL,
+            sensor_type TEXT,
+            window_start TEXT NOT NULL,
+            window_end TEXT NOT NULL,
+            sensor_hours INTEGER,
+            reference_hours INTEGER,
+            paired_hours INTEGER,
+            score TEXT,
+            audited_at TEXT NOT NULL,
+            PRIMARY KEY (uid, species, window_start, window_end)
+        );
         """
     )
     cols = {r["name"] for r in c.execute("PRAGMA table_info(proposals)")}
@@ -638,5 +653,44 @@ def get_sensor_readings(uid: Optional[str] = None,
     for r in rows:
         d = dict(r)
         d["flags"] = json.loads(d["flags"]) if d.get("flags") else {}
+        out.append(d)
+    return out
+
+
+def save_sensor_audit(a: Dict[str, Any]) -> None:
+    """Persist one scored sensor-vs-reference audit row."""
+    c = _conn()
+    c.execute(
+        """INSERT OR REPLACE INTO sensor_audits
+           (uid, species, reference, distance_m, sensor_type, window_start,
+            window_end, sensor_hours, reference_hours, paired_hours, score,
+            audited_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
+        (a["uid"], a["species"], a["reference"], a.get("distance_m"),
+         a.get("sensor_type"), a["window_start"], a["window_end"],
+         a.get("sensor_hours"), a.get("reference_hours"),
+         a.get("paired_hours"), json.dumps(a.get("score") or {}),
+         a["audited_at"]),
+    )
+    c.commit()
+    c.close()
+
+
+def get_sensor_audits(species: Optional[str] = None) -> List[Dict[str, Any]]:
+    """Latest audit per (uid, species), most recent audit first."""
+    q = """SELECT * FROM sensor_audits WHERE (uid, species, audited_at) IN
+           (SELECT uid, species, MAX(audited_at) FROM sensor_audits
+            GROUP BY uid, species)"""
+    args: list = []
+    if species:
+        q += " AND species=?"
+        args.append(species)
+    q += " ORDER BY species, distance_m"
+    c = _conn()
+    rows = c.execute(q, args).fetchall()
+    c.close()
+    out = []
+    for r in rows:
+        d = dict(r)
+        d["score"] = json.loads(d["score"]) if d.get("score") else {}
         out.append(d)
     return out

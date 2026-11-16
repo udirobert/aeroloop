@@ -112,6 +112,20 @@ arrives later — and certifies or pays for what holds up. Four layers:
   breathelondon.org). Its values are already corrected by the operators
   (`ScaledValue`), so auditing them is an independent check of an incumbent's
   calibration — framed as collaboration, not a gotcha.
+- *Second location — the Netherlands (added 2026-11-16), needs zero keys:*
+  RIVM's Luchtmeetnet open API gives the national reference network (no auth,
+  fair-use rate limit — probe at low concurrency); sensor.community NL is the
+  world's second-densest low-cost network. Empirical qualification over
+  1–9 Nov 2026: **74 PM2.5 and 86 PM10 qualifying reference sites** out of 103
+  probed, and **~1,426 unique outdoor/indoor PM sensors** — ~43× London's
+  open-data density. First co-location scan: **11 sensors within 500 m** of a
+  qualifying reference (nearest 7 m). First sensor-vs-reference audit
+  (1–9 Nov, all 11 pairs scored, ~154–169 paired h each): **PM2.5 4 fit /
+  3 drifting / 4 unfit; PM10 11/11 unfit** (slope over-response up to 2.60,
+  scored indicatively against EPA PM2.5 targets). RIVM also publishes
+  *corrected* citizen-sensor data via Samen Meten — auditing it is the same
+  incumbent-calibration pattern as Breathe London, and NL is the EU
+  Directive 2024/2881 second market.
 
 **First real finding (hindcast, 1 Oct–9 Nov 2026, 26 reference sites, 22,309
 hourly pairs).** Scored against US EPA PM2.5 sensor targets on 24-hour means
@@ -208,11 +222,14 @@ credible rather than a vendor's word:
   hindcast batch); OTS stamp pending Bitcoin attestation.
 - Remaining: live mode (proposals committed now, scored on future truth).
 
-**Milestone 2 — Real sensors and the trust map** (2a built 2026-11-15: reference discovery, multi-site hindcast, trust engine, adapters, co-location)
+**Milestone 2 — Real sensors and the trust map** (2a built 2026-11-15: reference discovery, multi-site hindcast, trust engine, adapters, co-location; **2b built 2026-11-16: Netherlands — Luchtmeetnet adapter, country-wide sensor.community listings, NL co-location, and the first real sensor-vs-reference trust audit**)
 - Ingest Breathe London (and PurpleAir where affordable) plus LAQN/AURN
   reference sites beyond North Kensington.
 - Co-location finder (≤ 500 m), trust tiers, drift detection, PM10 and the
   190 µg/m³ action-level test where PM10 exists.
+- NL done: 11 verified co-locations scored vs RIVM — PM2.5 4 fit / 3 drifting /
+  4 unfit; PM10 11/11 unfit (over-response). Next: explore Samen Meten corrected
+  data as an audit subject; add a dedicated PM10 target band.
 - Trust layer in the 3D scene and dashboard.
 
 **Milestone 3 — Buyers**

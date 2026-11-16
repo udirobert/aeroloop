@@ -58,6 +58,21 @@
     #loading div { font-size: 12px; letter-spacing: .3em; text-transform: uppercase;
                    color: #7d87ab; animation: pulse 1.6s infinite; }
     @keyframes pulse { 50% { opacity: .35; } }
+    /* Daybreak Audit — daylight twin, same sim. Toggle via ☀/☾ or ?theme=day */
+    body[data-theme=day] { background: #EAF2F0; color: #1A2B22; }
+    body[data-theme=day] #scene canvas { filter: saturate(.92); }
+    body[data-theme=day] #hud h1 { color: #1A2B22; text-shadow: none; }
+    body[data-theme=day] #hud .sub, body[data-theme=day] #legend,
+    body[data-theme=day] #sources, body[data-theme=day] #timeLabel { color: #5C6B62; }
+    body[data-theme=day] #sources b { color: #1A2B22; }
+    body[data-theme=day] #caption { color: #1A2B22; text-shadow: 0 1px 0 #fff, 0 2px 18px rgba(255,255,255,.8); }
+    body[data-theme=day] #controls button, body[data-theme=day] #scrubber {
+      background: rgba(255,255,255,.82); color: #1A2B22; border-color: #D4DCD4; }
+    body[data-theme=day] #controls button:hover { border-color: #0E7C9E; }
+    body[data-theme=day] #controls button.active { border-color: #0E7C9E; color: #0E7C9E; }
+    body[data-theme=day] a.back { color: #5C6B62; }
+    body[data-theme=day] #verdict { text-shadow: 0 0 24px currentColor; }
+    body[data-theme=day] #loading { background: #EAF2F0; }
   </style>
 </head>
 <body>
@@ -82,6 +97,7 @@
         <button id="btnFilm">▶ play the film</button>
         <button id="btnLabels" class="active">labels</button>
         <button id="btnDemo">+ memories</button>
+        <button id="btnTheme" title="toggle day / night">☀ day</button>
         <a class="back" href="/" style="align-self:center">data view →</a>
       </div>
     </div>
@@ -94,6 +110,14 @@
     <input type="range" id="scrub" min="0" max="23" value="23" />
     <span id="timeLabel"></span>
   </div>
+  <script>
+    // early theme so first paint matches ?theme=day and stored choice
+    try {
+      const q = new URLSearchParams(location.search).get('theme');
+      const t = q || localStorage.getItem('aeroloop-scene-theme') || 'night';
+      document.body.dataset.theme = t === 'day' ? 'day' : 'night';
+    } catch (e) { document.body.dataset.theme = 'night'; }
+  </script>
   <script type="importmap">
     { "imports": { "three": "/static/vendor/three.module.js" } }
   </script>

@@ -1,0 +1,991 @@
+{
+  "generated_at": "2026-11-16T16:24:22.152037Z",
+  "species": "PM10",
+  "window": "2026-11-01..2026-11-09",
+  "colocation_max_m": 500.0,
+  "sensor_source": "sensor.community archive CSVs (P1=PM10, P2=PM2.5)",
+  "reference_source": "RIVM Luchtmeetnet open API",
+  "standard": "US EPA 2021 PM2.5 sensor performance targets (24-h averages) \u2014 indicative comparison, not certification",
+  "n_candidates": 11,
+  "results": [
+    {
+      "uid": "sc:89661",
+      "reference": "NL49680",
+      "distance_m": 7.3,
+      "sensor_type": "SDS011",
+      "sensor_hours": 216,
+      "reference_hours": 169,
+      "paired_hours": 169,
+      "score": {
+        "status": "unfit",
+        "daily_points": [
+          {
+            "day": "2026-11-02",
+            "subject": 5.919692753623188,
+            "reference": 10.25,
+            "n_hours": 24
+          },
+          {
+            "day": "2026-11-03",
+            "subject": 7.635671859903382,
+            "reference": 8.183333333333334,
+            "n_hours": 24
+          },
+          {
+            "day": "2026-11-04",
+            "subject": 7.367074305555556,
+            "reference": 9.320833333333333,
+            "n_hours": 24
+          },
+          {
+            "day": "2026-11-05",
+            "subject": 8.2323375,
+            "reference": 11.804166666666667,
+            "n_hours": 24
+          },
+          {
+            "day": "2026-11-06",
+            "subject": 21.423042542270533,
+            "reference": 20.520833333333332,
+            "n_hours": 24
+          },
+          {
+            "day": "2026-11-07",
+            "subject": 44.95617777777778,
+            "reference": 33.358333333333334,
+            "n_hours": 24
+          },
+          {
+            "day": "2026-11-08",
+            "subject": 67.69817291666666,
+            "reference": 37.06666666666667,
+            "n_hours": 24
+          }
+        ],
+        "standard": "US EPA 2021 PM2.5 sensor performance targets (24-h averages) \u2014 indicative comparison, not certification",
+        "n_days": 7,
+        "total_days": 7,
+        "completeness": 1.0,
+        "daily": {
+          "slope": 1.9408774631613397,
+          "intercept": -12.865775182312504,
+          "r2": 0.9471831658581491,
+          "rmse": 12.588201869948291,
+          "nrmse": 0.675207660723257,
+          "mae": 7.647873831090408,
+          "bias": 4.675428998447204,
+          "mean_reference": 18.64345238095238
+        },
+        "epa_checks": {
+          "completeness_ge_75pct": true,
+          "r2_ge_0_70": true,
+          "slope_within_0_65_1_35": false,
+          "intercept_within_pm5": false,
+          "rmse_le_7_or_nrmse_le_30pct": false
+        },
+        "meets_epa_targets": false,
+        "drift": {
+          "bias_shift": 12.167175266706924,
+          "drift_flag": true,
+          "note": "AeroLoop heuristic (not EPA): |bias shift between chronological halves| > max(2.0, 0.25 x mean reference)"
+        },
+        "hourly": {
+          "n": 169,
+          "mae": 8.658480674899236,
+          "rmse": 17.526445539262863,
+          "bias": 4.61661107537947
+        }
+      }
+    },
+    {
+      "uid": "sc:83819",
+      "reference": "NL50011",
+      "distance_m": 64.6,
+      "sensor_type": "SDS011",
+      "sensor_hours": 216,
+      "reference_hours": 169,
+      "paired_hours": 169,
+      "score": {
+        "status": "unfit",
+        "daily_points": [
+          {
+            "day": "2026-11-02",
+            "subject": 13.437083333333334,
+            "reference": 18.166666666666668,
+            "n_hours": 24
+          },
+          {
+            "day": "2026-11-03",
+            "subject": 12.063472222222222,
+            "reference": 17.083333333333332,
+            "n_hours": 24
+          },
+          {
+            "day": "2026-11-04",
+            "subject": 5.4373611111111115,
+            "reference": 12.208333333333334,
+            "n_hours": 24
+          },
+          {
+            "day": "2026-11-05",
+            "subject": 9.307253787878787,
+            "reference": 17.666666666666668,
+            "n_hours": 24
+          },
+          {
+            "day": "2026-11-06",
+            "subject": 16.01988952020202,
+            "reference": 27.625,
+            "n_hours": 24
+          },
+          {
+            "day": "2026-11-07",
+            "subject": 36.96786300505051,
+            "reference": 41.916666666666664,
+            "n_hours": 24
+          },
+          {
+            "day": "2026-11-08",
+            "subject": 23.68464330808081,
+            "reference": 26.625,
+            "n_hours": 24
+          }
+        ],
+        "standard": "US EPA 2021 PM2.5 sensor performance targets (24-h averages) \u2014 indicative comparison, not certification",
+        "n_days": 7,
+        "total_days": 7,
+        "completeness": 1.0,
+        "daily": {
+          "slope": 1.02369874720141,
+          "intercept": -6.885215830402185,
+          "r2": 0.9265526686109397,
+          "rmse": 6.877590493761979,
+          "nrmse": 0.2984849400547695,
+          "mae": 6.339157196969696,
+          "bias": -6.339157196969696,
+          "mean_reference": 23.041666666666664
+        },
+        "epa_checks": {
+          "completeness_ge_75pct": true,
+          "r2_ge_0_70": true,
+          "slope_within_0_65_1_35": true,
+          "intercept_within_pm5": false,
+          "rmse_le_7_or_nrmse_le_30pct": true
+        },
+        "meets_epa_targets": false,
+        "drift": {
+          "bias_shift": -1.4566153724747455,
+          "drift_flag": false,
+          "note": "AeroLoop heuristic (not EPA): |bias shift between chronological halves| > max(2.0, 0.25 x mean reference)"
+        },
+        "hourly": {
+          "n": 169,
+          "mae": 7.621633046440739,
+          "rmse": 8.917014450133712,
+          "bias": -6.306114846691769
+        }
+      }
+    },
+    {
+      "uid": "sc:58553",
+      "reference": "NL10937",
+      "distance_m": 194.5,
+      "sensor_type": "SDS011",
+      "sensor_hours": 214,
+      "reference_hours": 169,
+      "paired_hours": 167,
+      "score": {
+        "status": "unfit",
+        "daily_points": [
+          {
+            "day": "2026-11-02",
+            "subject": 9.125938194444444,
+            "reference": 10.110833333333334,
+            "n_hours": 24
+          },
+          {
+            "day": "2026-11-03",
+            "subject": 5.692434027777778,
+            "reference": 7.28375,
+            "n_hours": 24
+          },
+          {
+            "day": "2026-11-04",
+            "subject": 4.268335606060607,
+            "reference": 7.463636363636363,
+            "n_hours": 22
+          },
+          {
+            "day": "2026-11-05",
+            "subject": 5.016650120772947,
+            "reference": 9.223333333333334,
+            "n_hours": 24
+          },
+          {
+            "day": "2026-11-06",
+            "subject": 10.379845833333333,
+            "reference": 13.321666666666667,
+            "n_hours": 24
+          },
+          {
+            "day": "2026-11-07",
+            "subject": 31.578135416666665,
+            "reference": 24.822916666666668,
+            "n_hours": 24
+          },
+          {
+            "day": "2026-11-08",
+            "subject": 49.184445833333335,
+            "reference": 34.845,
+            "n_hours": 24
+          }
+        ],
+        "standard": "US EPA 2021 PM2.5 sensor performance targets (24-h averages) \u2014 indicative comparison, not certification",
+        "n_days": 7,
+        "total_days": 7,
+        "completeness": 1.0,
+        "daily": {
+          "slope": 1.6288825245218452,
+          "intercept": -8.451502553004808,
+          "r2": 0.989741136269945,
+          "rmse": 6.451084432903449,
+          "nrmse": 0.42175316863136064,
+          "mae": 4.85924007113056,
+          "bias": 1.1678069526789632,
+          "mean_reference": 15.295876623376625
+        },
+        "epa_checks": {
+          "completeness_ge_75pct": true,
+          "r2_ge_0_70": true,
+          "slope_within_0_65_1_35": false,
+          "intercept_within_pm5": false,
+          "rmse_le_7_or_nrmse_le_30pct": true
+        },
+        "meets_epa_targets": false,
+        "drift": {
+          "bias_shift": 5.410377423922192,
+          "drift_flag": true,
+          "note": "AeroLoop heuristic (not EPA): |bias shift between chronological halves| > max(2.0, 0.25 x mean reference)"
+        },
+        "hourly": {
+          "n": 167,
+          "mae": 5.152387806994706,
+          "rmse": 7.092022629676019,
+          "bias": 1.225586644103098
+        }
+      }
+    },
+    {
+      "uid": "sc:93588",
+      "reference": "NL01493",
+      "distance_m": 206.3,
+      "sensor_type": "SDS011",
+      "sensor_hours": 215,
+      "reference_hours": 169,
+      "paired_hours": 168,
+      "score": {
+        "status": "unfit",
+        "daily_points": [
+          {
+            "day": "2026-11-02",
+            "subject": 9.024252344877345,
+            "reference": 13.679166666666667,
+            "n_hours": 24
+          },
+          {
+            "day": "2026-11-03",
+            "subject": 10.163015873015873,
+            "reference": 10.791666666666666,
+            "n_hours": 24
+          },
+          {
+            "day": "2026-11-04",
+            "subject": 11.53321158008658,
+            "reference": 12.5375,
+            "n_hours": 24
+          },
+          {
+            "day": "2026-11-05",
+            "subject": 17.92927171379345,
+            "reference": 17.76086956521739,
+            "n_hours": 23
+          },
+          {
+            "day": "2026-11-06",
+            "subject": 38.877362012987014,
+            "reference": 31.391666666666666,
+            "n_hours": 24
+          },
+          {
+            "day": "2026-11-07",
+            "subject": 68.75080627705627,
+            "reference": 46.0625,
+            "n_hours": 24
+          },
+          {
+            "day": "2026-11-08",
+            "subject": 60.30963012389299,
+            "reference": 37.80416666666667,
+            "n_hours": 24
+          }
+        ],
+        "standard": "US EPA 2021 PM2.5 sensor performance targets (24-h averages) \u2014 indicative comparison, not certification",
+        "n_days": 7,
+        "total_days": 7,
+        "completeness": 1.0,
+        "daily": {
+          "slope": 1.77781235648085,
+          "intercept": -12.241357847047052,
+          "r2": 0.9802774759934325,
+          "rmse": 12.537891971605552,
+          "nrmse": 0.5161825298788331,
+          "mae": 8.447960109218934,
+          "bias": 6.651430527689351,
+          "mean_reference": 24.289648033126294
+        },
+        "epa_checks": {
+          "completeness_ge_75pct": true,
+          "r2_ge_0_70": true,
+          "slope_within_0_65_1_35": false,
+          "intercept_within_pm5": false,
+          "rmse_le_7_or_nrmse_le_30pct": false
+        },
+        "meets_epa_targets": false,
+        "drift": {
+          "bias_shift": 15.307917985745929,
+          "drift_flag": true,
+          "note": "AeroLoop heuristic (not EPA): |bias shift between chronological halves| > max(2.0, 0.25 x mean reference)"
+        },
+        "hourly": {
+          "n": 168,
+          "mae": 10.127665579042416,
+          "rmse": 13.756592085339127,
+          "bias": 6.660704107973804
+        }
+      }
+    },
+    {
+      "uid": "sc:83736",
+      "reference": "NL50011",
+      "distance_m": 219.4,
+      "sensor_type": "SDS011",
+      "sensor_hours": 216,
+      "reference_hours": 169,
+      "paired_hours": 169,
+      "score": {
+        "status": "unfit",
+        "daily_points": [
+          {
+            "day": "2026-11-02",
+            "subject": 20.137727272727272,
+            "reference": 18.166666666666668,
+            "n_hours": 24
+          },
+          {
+            "day": "2026-11-03",
+            "subject": 15.358431186868685,
+            "reference": 17.083333333333332,
+            "n_hours": 24
+          },
+          {
+            "day": "2026-11-04",
+            "subject": 5.738541666666666,
+            "reference": 12.208333333333334,
+            "n_hours": 24
+          },
+          {
+            "day": "2026-11-05",
+            "subject": 12.33958648989899,
+            "reference": 17.666666666666668,
+            "n_hours": 24
+          },
+          {
+            "day": "2026-11-06",
+            "subject": 23.243680555555557,
+            "reference": 27.625,
+            "n_hours": 24
+          },
+          {
+            "day": "2026-11-07",
+            "subject": 68.898961489899,
+            "reference": 41.916666666666664,
+            "n_hours": 24
+          },
+          {
+            "day": "2026-11-08",
+            "subject": 29.116284722222222,
+            "reference": 26.625,
+            "n_hours": 24
+          }
+        ],
+        "standard": "US EPA 2021 PM2.5 sensor performance targets (24-h averages) \u2014 indicative comparison, not certification",
+        "n_days": 7,
+        "total_days": 7,
+        "completeness": 1.0,
+        "daily": {
+          "slope": 2.003183196720443,
+          "intercept": -21.180506150551857,
+          "r2": 0.9210350331868853,
+          "rmse": 10.892612492069357,
+          "nrmse": 0.4727354426937877,
+          "mae": 7.049676226551227,
+          "bias": 1.9345066738816743,
+          "mean_reference": 23.041666666666664
+        },
+        "epa_checks": {
+          "completeness_ge_75pct": true,
+          "r2_ge_0_70": true,
+          "slope_within_0_65_1_35": false,
+          "intercept_within_pm5": false,
+          "rmse_le_7_or_nrmse_le_30pct": false
+        },
+        "meets_epa_targets": false,
+        "drift": {
+          "bias_shift": 7.015839383417511,
+          "drift_flag": true,
+          "note": "AeroLoop heuristic (not EPA): |bias shift between chronological halves| > max(2.0, 0.25 x mean reference)"
+        },
+        "hourly": {
+          "n": 169,
+          "mae": 9.498144611798457,
+          "rmse": 22.990725963840884,
+          "bias": 1.9555105791644254
+        }
+      }
+    },
+    {
+      "uid": "sc:13607",
+      "reference": "NL50007",
+      "distance_m": 266.8,
+      "sensor_type": "SDS011",
+      "sensor_hours": 216,
+      "reference_hours": 166,
+      "paired_hours": 166,
+      "score": {
+        "status": "unfit",
+        "daily_points": [
+          {
+            "day": "2026-11-02",
+            "subject": 18.831018417874397,
+            "reference": 22.291666666666668,
+            "n_hours": 24
+          },
+          {
+            "day": "2026-11-03",
+            "subject": 14.544529679951692,
+            "reference": 16.833333333333332,
+            "n_hours": 24
+          },
+          {
+            "day": "2026-11-04",
+            "subject": 8.857492236024845,
+            "reference": 13.761904761904763,
+            "n_hours": 21
+          },
+          {
+            "day": "2026-11-05",
+            "subject": 12.470523852657005,
+            "reference": 21.333333333333332,
+            "n_hours": 24
+          },
+          {
+            "day": "2026-11-06",
+            "subject": 29.92404513888889,
+            "reference": 36.083333333333336,
+            "n_hours": 24
+          },
+          {
+            "day": "2026-11-07",
+            "subject": 104.59987847222222,
+            "reference": 40.083333333333336,
+            "n_hours": 24
+          },
+          {
+            "day": "2026-11-08",
+            "subject": 61.0316756642512,
+            "reference": 21.541666666666668,
+            "n_hours": 24
+          }
+        ],
+        "standard": "US EPA 2021 PM2.5 sensor performance targets (24-h averages) \u2014 indicative comparison, not certification",
+        "n_days": 7,
+        "total_days": 7,
+        "completeness": 1.0,
+        "daily": {
+          "slope": 2.597862232324452,
+          "intercept": -28.055368415701764,
+          "r2": 0.5231357862564502,
+          "rmse": 28.981766684122018,
+          "nrmse": 1.1799805297232893,
+          "mae": 18.52607374852115,
+          "bias": 11.190084576185546,
+          "mean_reference": 24.561224489795922
+        },
+        "epa_checks": {
+          "completeness_ge_75pct": true,
+          "r2_ge_0_70": false,
+          "slope_within_0_65_1_35": false,
+          "intercept_within_pm5": false,
+          "rmse_le_7_or_nrmse_le_30pct": false
+        },
+        "meets_epa_targets": false,
+        "drift": {
+          "bias_shift": 25.79740225802277,
+          "drift_flag": true,
+          "note": "AeroLoop heuristic (not EPA): |bias shift between chronological halves| > max(2.0, 0.25 x mean reference)"
+        },
+        "hourly": {
+          "n": 166,
+          "mae": 22.062903985507248,
+          "rmse": 39.62156280416445,
+          "bias": 11.464525279378384
+        }
+      }
+    },
+    {
+      "uid": "sc:93833",
+      "reference": "NL50003",
+      "distance_m": 314.6,
+      "sensor_type": "SDS011",
+      "sensor_hours": 216,
+      "reference_hours": 169,
+      "paired_hours": 169,
+      "score": {
+        "status": "unfit",
+        "daily_points": [
+          {
+            "day": "2026-11-02",
+            "subject": 40.78438374962277,
+            "reference": 22.541666666666668,
+            "n_hours": 24
+          },
+          {
+            "day": "2026-11-03",
+            "subject": 25.31095003069829,
+            "reference": 16.708333333333332,
+            "n_hours": 24
+          },
+          {
+            "day": "2026-11-04",
+            "subject": 6.6653070664303735,
+            "reference": 11.208333333333334,
+            "n_hours": 24
+          },
+          {
+            "day": "2026-11-05",
+            "subject": 14.334179187454488,
+            "reference": 17.125,
+            "n_hours": 24
+          },
+          {
+            "day": "2026-11-06",
+            "subject": 27.88453357530878,
+            "reference": 29.041666666666668,
+            "n_hours": 24
+          },
+          {
+            "day": "2026-11-07",
+            "subject": 40.33317108393627,
+            "reference": 35.083333333333336,
+            "n_hours": 24
+          },
+          {
+            "day": "2026-11-08",
+            "subject": 19.551723506836947,
+            "reference": 19.958333333333332,
+            "n_hours": 24
+          }
+        ],
+        "standard": "US EPA 2021 PM2.5 sensor performance targets (24-h averages) \u2014 indicative comparison, not certification",
+        "n_days": 7,
+        "total_days": 7,
+        "completeness": 1.0,
+        "daily": {
+          "slope": 1.2447124938474197,
+          "intercept": -1.9881638142720064,
+          "r2": 0.6257174027037663,
+          "rmse": 8.144188059415155,
+          "nrmse": 0.375885602742238,
+          "mae": 5.856108789746678,
+          "bias": 3.31394021908875,
+          "mean_reference": 21.666666666666664
+        },
+        "epa_checks": {
+          "completeness_ge_75pct": true,
+          "r2_ge_0_70": false,
+          "slope_within_0_65_1_35": true,
+          "intercept_within_pm5": true,
+          "rmse_le_7_or_nrmse_le_30pct": false
+        },
+        "meets_epa_targets": false,
+        "drift": {
+          "bias_shift": -7.210283999421913,
+          "drift_flag": true,
+          "note": "AeroLoop heuristic (not EPA): |bias shift between chronological halves| > max(2.0, 0.25 x mean reference)"
+        },
+        "hourly": {
+          "n": 169,
+          "mae": 7.9063922440178205,
+          "rmse": 12.669908568228756,
+          "bias": 3.3305441231178103
+        }
+      }
+    },
+    {
+      "uid": "sc:83702",
+      "reference": "NL10450",
+      "distance_m": 316.8,
+      "sensor_type": "SDS011",
+      "sensor_hours": 216,
+      "reference_hours": 168,
+      "paired_hours": 168,
+      "score": {
+        "status": "unfit",
+        "daily_points": [
+          {
+            "day": "2026-11-02",
+            "subject": 13.791395021645021,
+            "reference": 13.621250000000002,
+            "n_hours": 24
+          },
+          {
+            "day": "2026-11-03",
+            "subject": 10.523668740981241,
+            "reference": 9.552916666666667,
+            "n_hours": 24
+          },
+          {
+            "day": "2026-11-04",
+            "subject": 10.839666305916305,
+            "reference": 12.424999999999999,
+            "n_hours": 24
+          },
+          {
+            "day": "2026-11-05",
+            "subject": 13.430272997835496,
+            "reference": 17.405833333333334,
+            "n_hours": 24
+          },
+          {
+            "day": "2026-11-06",
+            "subject": 30.56764728025598,
+            "reference": 29.639565217391304,
+            "n_hours": 23
+          },
+          {
+            "day": "2026-11-07",
+            "subject": 70.47574585137085,
+            "reference": 42.92250000000001,
+            "n_hours": 24
+          },
+          {
+            "day": "2026-11-08",
+            "subject": 79.92828463203463,
+            "reference": 36.27375,
+            "n_hours": 24
+          }
+        ],
+        "standard": "US EPA 2021 PM2.5 sensor performance targets (24-h averages) \u2014 indicative comparison, not certification",
+        "n_days": 7,
+        "total_days": 7,
+        "completeness": 1.0,
+        "daily": {
+          "slope": 2.1183497576620254,
+          "intercept": -16.182681552220856,
+          "r2": 0.8613900691001392,
+          "rmse": 19.585164790225296,
+          "nrmse": 0.84710493670848,
+          "mae": 11.262521953115895,
+          "bias": 9.673695087521173,
+          "mean_reference": 23.12011645962733
+        },
+        "epa_checks": {
+          "completeness_ge_75pct": true,
+          "r2_ge_0_70": true,
+          "slope_within_0_65_1_35": false,
+          "intercept_within_pm5": false,
+          "rmse_le_7_or_nrmse_le_30pct": false
+        },
+        "meets_epa_targets": false,
+        "drift": {
+          "bias_shift": 17.18822108540111,
+          "drift_flag": true,
+          "note": "AeroLoop heuristic (not EPA): |bias shift between chronological halves| > max(2.0, 0.25 x mean reference)"
+        },
+        "hourly": {
+          "n": 168,
+          "mae": 13.26592334054834,
+          "rmse": 25.747322804015106,
+          "bias": 9.703260075242218
+        }
+      }
+    },
+    {
+      "uid": "sc:95790",
+      "reference": "NL10445",
+      "distance_m": 360.7,
+      "sensor_type": "SPS30",
+      "sensor_hours": 196,
+      "reference_hours": 169,
+      "paired_hours": 154,
+      "score": {
+        "status": "unfit",
+        "daily_points": [
+          {
+            "day": "2026-11-02",
+            "subject": 4.478273919753087,
+            "reference": 13.265,
+            "n_hours": 18
+          },
+          {
+            "day": "2026-11-03",
+            "subject": 8.52933822386213,
+            "reference": 9.953684210526315,
+            "n_hours": 19
+          },
+          {
+            "day": "2026-11-04",
+            "subject": 9.694977777777778,
+            "reference": 12.144583333333335,
+            "n_hours": 24
+          },
+          {
+            "day": "2026-11-05",
+            "subject": 14.13970230593445,
+            "reference": 16.15041666666667,
+            "n_hours": 24
+          },
+          {
+            "day": "2026-11-06",
+            "subject": 30.34174949726094,
+            "reference": 27.683913043478263,
+            "n_hours": 23
+          },
+          {
+            "day": "2026-11-07",
+            "subject": 51.91407246304923,
+            "reference": 42.02708333333333,
+            "n_hours": 24
+          },
+          {
+            "day": "2026-11-08",
+            "subject": 43.70206248852158,
+            "reference": 36.001363636363635,
+            "n_hours": 22
+          }
+        ],
+        "standard": "US EPA 2021 PM2.5 sensor performance targets (24-h averages) \u2014 indicative comparison, not certification",
+        "n_days": 7,
+        "total_days": 7,
+        "completeness": 1.0,
+        "daily": {
+          "slope": 1.4569983582573214,
+          "intercept": -9.468273090438139,
+          "r2": 0.9792381291355172,
+          "rmse": 6.016599274330074,
+          "nrmse": 0.2678703463427949,
+          "mae": 4.988130916979342,
+          "bias": 0.7963046360653774,
+          "mean_reference": 22.460863460528792
+        },
+        "epa_checks": {
+          "completeness_ge_75pct": true,
+          "r2_ge_0_70": true,
+          "slope_within_0_65_1_35": false,
+          "intercept_within_pm5": false,
+          "rmse_le_7_or_nrmse_le_30pct": true
+        },
+        "meets_epa_targets": false,
+        "drift": {
+          "bias_shift": 8.778928392886627,
+          "drift_flag": true,
+          "note": "AeroLoop heuristic (not EPA): |bias shift between chronological halves| > max(2.0, 0.25 x mean reference)"
+        },
+        "hourly": {
+          "n": 154,
+          "mae": 5.7018545962536535,
+          "rmse": 6.863540528119013,
+          "bias": 1.140013189062905
+        }
+      }
+    },
+    {
+      "uid": "sc:91608",
+      "reference": "NL01495",
+      "distance_m": 391.0,
+      "sensor_type": "SPS30",
+      "sensor_hours": 215,
+      "reference_hours": 169,
+      "paired_hours": 168,
+      "score": {
+        "status": "unfit",
+        "daily_points": [
+          {
+            "day": "2026-11-02",
+            "subject": 5.9751666666666665,
+            "reference": 14.508333333333333,
+            "n_hours": 24
+          },
+          {
+            "day": "2026-11-03",
+            "subject": 7.054631944444444,
+            "reference": 10.820833333333333,
+            "n_hours": 24
+          },
+          {
+            "day": "2026-11-04",
+            "subject": 9.674861111111111,
+            "reference": 13.429166666666667,
+            "n_hours": 24
+          },
+          {
+            "day": "2026-11-05",
+            "subject": 13.99025697490915,
+            "reference": 17.952173913043477,
+            "n_hours": 23
+          },
+          {
+            "day": "2026-11-06",
+            "subject": 30.53140277777778,
+            "reference": 32.61666666666667,
+            "n_hours": 24
+          },
+          {
+            "day": "2026-11-07",
+            "subject": 47.71008333333333,
+            "reference": 45.77916666666667,
+            "n_hours": 24
+          },
+          {
+            "day": "2026-11-08",
+            "subject": 37.711166666666664,
+            "reference": 34.583333333333336,
+            "n_hours": 24
+          }
+        ],
+        "standard": "US EPA 2021 PM2.5 sensor performance targets (24-h averages) \u2014 indicative comparison, not certification",
+        "n_days": 7,
+        "total_days": 7,
+        "completeness": 1.0,
+        "daily": {
+          "slope": 1.2383510068787094,
+          "intercept": -8.212544153175447,
+          "r2": 0.9807687998293365,
+          "rmse": 4.385868676181279,
+          "nrmse": 0.1809248613972913,
+          "mae": 3.8799434911620447,
+          "bias": -2.434586348304905,
+          "mean_reference": 24.241381987577643
+        },
+        "epa_checks": {
+          "completeness_ge_75pct": true,
+          "r2_ge_0_70": true,
+          "slope_within_0_65_1_35": true,
+          "intercept_within_pm5": false,
+          "rmse_le_7_or_nrmse_le_30pct": true
+        },
+        "meets_epa_targets": false,
+        "drift": {
+          "bias_shift": 5.104116830281232,
+          "drift_flag": false,
+          "note": "AeroLoop heuristic (not EPA): |bias shift between chronological halves| > max(2.0, 0.25 x mean reference)"
+        },
+        "hourly": {
+          "n": 168,
+          "mae": 4.290598747482676,
+          "rmse": 5.306023612158269,
+          "bias": -2.4398844617683904
+        }
+      }
+    },
+    {
+      "uid": "sc:99313",
+      "reference": "NL49570",
+      "distance_m": 433.6,
+      "sensor_type": "SDS011",
+      "sensor_hours": 216,
+      "reference_hours": 169,
+      "paired_hours": 169,
+      "score": {
+        "status": "unfit",
+        "daily_points": [
+          {
+            "day": "2026-11-02",
+            "subject": 8.04861111111111,
+            "reference": 11.233333333333334,
+            "n_hours": 24
+          },
+          {
+            "day": "2026-11-03",
+            "subject": 5.4312499999999995,
+            "reference": 6.983333333333333,
+            "n_hours": 24
+          },
+          {
+            "day": "2026-11-04",
+            "subject": 5.070138888888889,
+            "reference": 8.858333333333333,
+            "n_hours": 24
+          },
+          {
+            "day": "2026-11-05",
+            "subject": 6.467708333333333,
+            "reference": 13.933333333333332,
+            "n_hours": 24
+          },
+          {
+            "day": "2026-11-06",
+            "subject": 19.3625,
+            "reference": 24.150000000000002,
+            "n_hours": 24
+          },
+          {
+            "day": "2026-11-07",
+            "subject": 33.13645833333333,
+            "reference": 35.09583333333333,
+            "n_hours": 24
+          },
+          {
+            "day": "2026-11-08",
+            "subject": 54.564236111111114,
+            "reference": 40.75833333333333,
+            "n_hours": 24
+          }
+        ],
+        "standard": "US EPA 2021 PM2.5 sensor performance targets (24-h averages) \u2014 indicative comparison, not certification",
+        "n_days": 7,
+        "total_days": 7,
+        "completeness": 1.0,
+        "daily": {
+          "slope": 1.3453552235978739,
+          "intercept": -8.233000098545343,
+          "r2": 0.9247940906897036,
+          "rmse": 6.546532890949106,
+          "nrmse": 0.3249763690214963,
+          "mae": 5.2204861111111125,
+          "bias": -1.27594246031746,
+          "mean_reference": 20.144642857142856
+        },
+        "epa_checks": {
+          "completeness_ge_75pct": true,
+          "r2_ge_0_70": true,
+          "slope_within_0_65_1_35": true,
+          "intercept_within_pm5": false,
+          "rmse_le_7_or_nrmse_le_30pct": true
+        },
+        "meets_epa_targets": false,
+        "drift": {
+          "bias_shift": 2.7400173611111125,
+          "drift_flag": false,
+          "note": "AeroLoop heuristic (not EPA): |bias shift between chronological halves| > max(2.0, 0.25 x mean reference)"
+        },
+        "hourly": {
+          "n": 169,
+          "mae": 5.785897435897436,
+          "rmse": 9.261073298083685,
+          "bias": -1.2985207100591718
+        }
+      }
+    }
+  ]
+}

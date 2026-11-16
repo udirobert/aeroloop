@@ -77,13 +77,15 @@ def colocation_report(species: str = "PM25") -> Dict[str, Any]:
 
 
 def refresh(lat: float = DEFAULT_LAT, lon: float = DEFAULT_LON,
-            km: float = DEFAULT_KM) -> Dict[str, int]:
+            km: float = DEFAULT_KM,
+            country: "str | None" = None) -> Dict[str, int]:
     import db
     from sensors import breathe_london, sensor_community
 
     db.init_db()
     counts = {}
-    counts["sensor_community"] = sensor_community.refresh_listings(lat, lon, km)
+    counts["sensor_community"] = sensor_community.refresh_listings(
+        lat, lon, km, country=country)
     counts["breathe_london"] = (breathe_london.refresh_listings()
                               if breathe_london.configured() else 0)
     return counts
@@ -96,11 +98,14 @@ def main() -> None:
     ap.add_argument("--lat", type=float, default=DEFAULT_LAT)
     ap.add_argument("--lon", type=float, default=DEFAULT_LON)
     ap.add_argument("--km", type=float, default=DEFAULT_KM)
+    ap.add_argument("--country", default=None,
+                    help="sensor.community country code (e.g. NL); "
+                         "overrides --lat/--lon/--km")
     a = ap.parse_args()
     if not os.getenv("DATABASE_PATH"):
         raise SystemExit("set DATABASE_PATH")
     if a.refresh:
-        counts = refresh(a.lat, a.lon, a.km)
+        counts = refresh(a.lat, a.lon, a.km, a.country)
         print("refreshed:", counts)
     import json
     rep = colocation_report(a.species)

@@ -2,145 +2,512 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AeroLoop — the independent auditor for air-quality data</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><circle cx='8' cy='8' r='6' fill='%230E7C9E'/></svg>" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <style>
+    :root {
+      --paper: #FAFBF7; --card: #FFFFFF; --ink: #1A2B22; --muted: #5C6B62;
+      --faint: #8A978E; --line: #E3EAE3; --line-soft: #EDF0EB;
+      --air: #0E7C9E; --beam: #7C5CF6; --moss: #1B7A3D; --moss-bg: #E3F2E6;
+      --pollen: #B7791F; --pollen-bg: #FBF0D3; --brick: #C0392B; --brick-bg: #FBE3DF;
+      --slate-bg: #EFF4EF;
+    }
     * { box-sizing: border-box; }
-    body { font-family: system-ui, sans-serif; margin: 0; background: #0a0e1a; color: #e6edf3; }
-    header { padding: 18px 24px; background: #0f1420; border-bottom: 1px solid #232a3a;
-             display: flex; align-items: baseline; gap: 14px; }
-    h1 { margin: 0; font-size: 20px; letter-spacing: .02em; }
-    .ghost { filter: drop-shadow(0 0 8px rgba(168,85,247,.7)); }
-    .subtitle { color: #8b93a7; font-size: 13px; }
-    main { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 16px 24px 32px; }
-    .card { background: #0f1420; border: 1px solid #232a3a; border-radius: 10px; padding: 16px 18px; }
-    .card h2 { margin: 0 0 12px; font-size: 14px; text-transform: uppercase; letter-spacing: .08em; color: #9aa3b8; }
-    .wide { grid-column: 1 / -1; }
-    button { background: #2d3a55; color: #dfe6f3; border: 1px solid #3b4a6b; padding: 8px 14px;
-             border-radius: 7px; cursor: pointer; font-size: 13px; }
-    button:hover { background: #38486a; }
-    button.primary { background: #7c3aed; border-color: #8b5cf6; color: #fff; }
-    button.primary:hover { background: #6d28d9; }
-    select { background: #151c2e; color: #dfe6f3; border: 1px solid #3b4a6b; padding: 7px 10px;
-             border-radius: 7px; font-size: 13px; }
+    body { font-family: "Avenir Next", "Segoe UI", system-ui, sans-serif; margin: 0;
+           background: var(--paper); color: var(--ink); line-height: 1.5; }
+    /* breathing air field */
+    .air { position: fixed; inset: 0; pointer-events: none; z-index: 0; opacity: .55;
+      background:
+        radial-gradient(520px 300px at 12% 8%, rgba(14,124,158,.08), transparent 70%),
+        radial-gradient(640px 360px at 88% 22%, rgba(124,92,246,.07), transparent 70%),
+        radial-gradient(700px 420px at 50% 95%, rgba(27,122,61,.06), transparent 70%);
+      animation: drift 40s ease-in-out infinite alternate; }
+    @keyframes drift { from { transform: translate3d(0,0,0) scale(1); }
+      to { transform: translate3d(24px,-18px,0) scale(1.04); } }
+    header.top { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 12px;
+      padding: 12px 24px; background: rgba(250,251,247,.88); backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--line); }
+    header.top h1 { margin: 0; font-size: 17px; letter-spacing: .02em; font-weight: 700; }
+    header.top .dot { width: 10px; height: 10px; border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #a78bfa, #7C5CF6 70%); box-shadow: 0 0 12px rgba(124,92,246,.7); }
+    header.top .sub { font-size: 12px; color: var(--muted); letter-spacing: .02em; }
+    header.top a.ghost { margin-left: auto; font-size: 12px; color: var(--air); text-decoration: none;
+      border: 1px solid var(--line); border-radius: 20px; padding: 6px 13px; background: #fff; }
+    header.top a.ghost:hover { border-color: var(--air); }
+    header.top button.theme { margin-left: 8px; border-radius: 20px; font-size: 12px; }
+    header.top a.ghost { margin-left: auto; }
+    body[data-theme=dark] { --paper: #0A0E1A; --card: #0F1420; --ink: #E6EDF3; --muted: #9AA3B8;
+      --faint: #6B7386; --line: #232A3A; --line-soft: #1A2133; --slate-bg: #0D1220; }
+    body[data-theme=dark] header.top { background: rgba(10,14,26,.88); }
+    body[data-theme=dark] .air { opacity: .35; }
+    body[data-theme=dark] .hero-card, body[data-theme=dark] .card, body[data-theme=dark] #intro,
+    body[data-theme=dark] #scatterPanel { box-shadow: 0 8px 30px rgba(0,0,0,.35); }
+    body { transition: background .5s ease, color .5s ease; }
+    .hero-card, .card, #scatterPanel { transition: background .5s ease, border-color .4s ease, transform .25s ease, box-shadow .25s ease; }
+    .reveal { opacity: 0; transform: translateY(14px); transition: opacity .6s ease, transform .6s ease; }
+    .reveal.in { opacity: 1; transform: none; }
+    .pair-tile { transition: border-color .2s, transform .22s cubic-bezier(.2,.7,.3,1.2), box-shadow .22s ease, opacity .3s ease; }
+    #scatterPanel.swap { animation: panelIn .45s ease; }
+    @keyframes panelIn { from { opacity: 0; transform: translateY(10px) scale(.995); } to { opacity: 1; transform: none; } }
+    .lane-draw polyline { stroke-dasharray: 600; stroke-dashoffset: 600; animation: draw 1.1s ease forwards; }
+    @keyframes draw { to { stroke-dashoffset: 0; } }
+    .wind { stroke-dasharray: 4 6; animation: windmove 1.6s linear infinite; }
+    @keyframes windmove { to { stroke-dashoffset: -20; } }
+    #passport { position: fixed; inset: 0; z-index: 50; display: none; align-items: center; justify-content: center; padding: 20px; }
+    #passport.open { display: flex; }
+    #passport .shade { position: absolute; inset: 0; background: rgba(10,14,26,.5); backdrop-filter: blur(4px); }
+    #passport .sheet { position: relative; max-width: 640px; width: 100%; max-height: 88vh; overflow: auto;
+      background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 22px; box-shadow: 0 24px 80px rgba(0,0,0,.25); }
+    .ghost-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; margin-top: 10px; }
+    .ghost-card { border: 1px dashed var(--line); border-radius: 12px; padding: 10px 12px; background: var(--slate-bg); font-size: 12.5px; }
+    @media print { header.top, #foldNav, .hero, #statBand, #intro, #foldEngine, #foldDemo, footer.site, #passport { display: none !important; } .wrap { max-width: 720px; } #certificate { display: block !important; } }
+    #certificate { display: none; border: 2px solid var(--ink); border-radius: 16px; padding: 24px; margin: 12px 0; }
+    .skip{position:absolute;left:-999px;top:0;background:var(--ink);color:#fff;padding:8px 14px;border-radius:0 0 10px 0;z-index:99}
+    .skip:focus{left:0}
+    :focus-visible{outline:2px solid var(--beam);outline-offset:2px;border-radius:6px}
+    button{cursor:pointer}button.primary:hover{filter:brightness(1.06)}button.primary:active{transform:translateY(1px)}
+    ::selection{background:#CDE7D2}
+    html{scroll-behavior:smooth}
+    body.embed .wrap, body.embed header.top, body.embed #passport { display: none; }
+    #embedBadge { display: none; }
+    body.embed #embedBadge { display: block; padding: 12px; }
+    .wrap { position: relative; z-index: 1; max-width: 1080px; margin: 0 auto; padding: 0 24px 64px; }
+    /* hero */
+    .hero { display: grid; grid-template-columns: 1.2fr .8fr; gap: 20px; align-items: stretch;
+      margin: 26px 0 18px; }
+    .hero-card { background: var(--card); border: 1px solid var(--line); border-radius: 20px;
+      padding: 26px 26px 22px; box-shadow: 0 12px 40px rgba(26,43,34,.07); }
+    .eyebrow { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--faint); margin-bottom: 8px; }
+    .hero h2 { margin: 0 0 8px; font-size: 34px; line-height: 1.08; letter-spacing: -.02em; }
+    .hero p.lede { margin: 0 0 16px; color: var(--muted); font-size: 14.5px; max-width: 56ch; }
+    .hero-search { display: flex; gap: 8px; flex-wrap: wrap; }
+    .hero-search input { flex: 1; min-width: 220px; padding: 10px 14px; border-radius: 10px;
+      border: 1px solid var(--line); font-size: 14px; background: var(--paper); color: var(--ink); }
+    .hero-proof { margin-top: 14px; font-size: 12.5px; color: var(--muted); }
+    .breath-card { display: flex; flex-direction: column; align-items: center; justify-content: center;
+      text-align: center; }
+    .breath { width: 110px; height: 110px; border-radius: 50%; margin-bottom: 12px;
+      background: radial-gradient(circle at 35% 30%, #fff, #DFF0F5 55%, #BFE3EE);
+      border: 1px solid var(--line); animation: breathe 4s ease-in-out infinite; position: relative; }
+    .breath::after { content: ""; position: absolute; inset: 14px; border-radius: 50%;
+      border: 1px dashed rgba(14,124,158,.4); }
+    @keyframes breathe { 0%,100% { transform: scale(.92); } 50% { transform: scale(1.06); } }
+    #verdictLine { font-size: 14px; color: var(--ink); }
+    #verdictLine b { font-weight: 700; }
+    main { display: flex; flex-direction: column; gap: 16px; }
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 18px 20px;
+      box-shadow: 0 6px 24px rgba(26,43,34,.05); }
+    .card h2 { margin: 0 0 10px; font-size: 13px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); }
+    .card h2 .plain { color: var(--faint); font-weight: 400; text-transform: none; letter-spacing: 0; }
+    .wide { width: 100%; }
+    button { background: #fff; color: var(--ink); border: 1px solid var(--line); padding: 8px 14px;
+             border-radius: 9px; cursor: pointer; font-size: 13px; }
+    button:hover { border-color: var(--air); }
+    button.primary { background: var(--beam); border-color: var(--beam); color: #fff; font-weight: 600; }
+    button.primary:hover { background: #6a48e8; }
+    select, input[type=number] { background: #fff; color: var(--ink); border: 1px solid var(--line);
+      padding: 7px 10px; border-radius: 9px; font-size: 13px; }
     .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-    .controls label { font-size: 12px; color: #8b93a7; margin-left: 8px; }
-    #status { margin-top: 12px; color: #9aa3b8; font-size: 13px; min-height: 18px; }
+    .controls label { font-size: 12px; color: var(--muted); margin-left: 8px; }
+    #status { margin-top: 12px; color: var(--muted); font-size: 13px; min-height: 18px; }
     .metric { display: inline-block; margin-right: 32px; }
-    .metric .val { font-size: 28px; font-weight: 700; }
-    .metric .lbl { font-size: 11px; color: #8b93a7; text-transform: uppercase; letter-spacing: .08em; }
-    .badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; }
-    .badge.kept { background: #14532d; color: #86efac; }
-    .badge.rejected { background: #3b2b5c; color: #c4b5fd; }
+    .metric .val { font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .metric .lbl { font-size: 11px; color: var(--faint); text-transform: uppercase; letter-spacing: .08em; }
+    .badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; }
+    .badge.kept { background: var(--moss-bg); color: var(--moss); border: 1px solid #BFE0C6; }
+    .badge.rejected { background: var(--brick-bg); color: var(--brick); border: 1px solid #EFC2BB; }
+    .badge.drifting { background: var(--pollen-bg); color: var(--pollen); border: 1px solid #EAD9A8; }
     .report-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 20px; font-size: 13px; }
-    .report-grid dt { color: #8b93a7; font-size: 11px; text-transform: uppercase; letter-spacing: .07em; margin-bottom: 2px; }
+    .report-grid dt { color: var(--faint); font-size: 11px; text-transform: uppercase; letter-spacing: .07em; margin-bottom: 2px; }
     .report-grid dd { margin: 0 0 6px; }
     table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
-    th { text-align: left; color: #8b93a7; font-weight: 600; padding: 6px 8px; border-bottom: 1px solid #232a3a;
+    th { text-align: left; color: var(--faint); font-weight: 600; padding: 6px 8px; border-bottom: 1px solid var(--line);
          font-size: 11px; text-transform: uppercase; letter-spacing: .07em; }
-    td { padding: 7px 8px; border-bottom: 1px solid #1a2133; vertical-align: top; }
-    tr.rejected td { opacity: .45; font-style: italic; }
+    td { padding: 7px 8px; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
+    tr.rejected td { opacity: .55; font-style: italic; }
     tr.rejected td.version::after { content: " 👻"; }
-    code { background: #151c2e; padding: 1px 5px; border-radius: 4px; font-size: 11.5px; }
+    tr.prop-row:hover td { background: var(--slate-bg); }
+    code { background: var(--slate-bg); padding: 1px 5px; border-radius: 4px; font-size: 11.5px; }
     canvas { width: 100%; }
-    .hint { font-size: 12px; color: #6b7386; margin-top: 10px; }
+    .hint { font-size: 12px; color: var(--faint); margin-top: 10px; }
+    #statBand { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 4px; }
+    .chip { background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+            padding: 7px 14px; font-size: 12.5px; color: var(--muted); }
+    .chip b { color: var(--ink); font-size: 15px; margin-right: 5px; font-variant-numeric: tabular-nums; }
+    .chip .sub { color: var(--faint); font-size: 11px; margin-left: 6px; }
+    .pair-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+    @keyframes tilePulse { 0% { box-shadow: 0 0 0 2px var(--beam), 0 0 0 0 rgba(124,92,246,.35); }
+                           100% { box-shadow: 0 0 0 2px var(--beam), 0 0 0 12px rgba(124,92,246,0); } }
+    .pair-tile { background: #fff; border: 1px solid var(--line); border-radius: 14px;
+                 padding: 13px 14px; cursor: pointer; animation: fadeUp .28s ease-out both;
+                 transition: border-color .15s, transform .18s ease-out, box-shadow .18s ease-out; }
+    .pair-tile:hover { border-color: var(--air); transform: translateY(-2px);
+                       box-shadow: 0 8px 22px rgba(26,43,34,.10); }
+    .pair-tile.selected { border-color: var(--beam); box-shadow: 0 0 0 2px var(--beam);
+                          animation: tilePulse .9s ease-out; }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .01ms !important; animation-delay: 0ms !important;
+                               transition-duration: .01ms !important; scroll-behavior: auto !important; }
+      .air, .breath { animation: none !important; }
+    }
+    .pair-tile .head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; gap: 8px; }
+    .pair-tile .uid { font-size: 12.5px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; }
+    .pair-tile .verdict { font-size: 11.5px; color: var(--muted); margin-top: 6px; min-height: 32px; }
+    .pair-tile .meta { font-size: 11px; color: var(--faint); margin-top: 6px; }
+    .checks { display: flex; gap: 5px; margin-top: 8px; }
+    .check { width: 18px; height: 18px; border-radius: 50%; display: inline-flex; align-items: center;
+             justify-content: center; font-size: 10px; font-weight: 700; }
+    .check.pass { background: var(--moss-bg); color: var(--moss); }
+    .check.fail { background: var(--brick-bg); color: var(--brick); }
+    .check.na { background: var(--line-soft); color: var(--faint); }
+    .legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 11.5px; color: var(--muted); margin-top: 8px; }
+    .legend span { display: inline-flex; align-items: center; gap: 6px; }
+    .swatch { width: 10px; height: 10px; display: inline-block; border-radius: 3px; }
+    #intro { display: flex; align-items: baseline; gap: 12px; padding: 11px 16px;
+             background: #fff; border: 1px solid var(--line); border-radius: 12px;
+             font-size: 12.5px; color: var(--muted); }
+    #intro b { color: var(--ink); }
+    #intro .dismiss { margin-left: auto; background: none; border: none; color: var(--faint);
+                      cursor: pointer; font-size: 14px; padding: 0 4px; }
+    details.fold > summary { cursor: pointer; list-style: none; background: var(--card);
+      border: 1px solid var(--line); border-radius: 14px; padding: 14px 18px;
+      display: flex; align-items: baseline; gap: 10px; }
+    details.fold > summary::-webkit-details-marker { display: none; }
+    details.fold > summary::before { content: '▸'; color: var(--air); font-size: 14px; }
+    details.fold[open] > summary::before { content: '▾'; }
+    details.fold .fold-title { font-size: 15px; font-weight: 700; color: var(--ink); }
+    details.fold .fold-sub { font-size: 12.5px; color: var(--muted); font-weight: 400; }
+    details.fold > .fold-body { display: flex; flex-direction: column; gap: 16px; margin-top: 16px; }
+    #foldNav { display: flex; gap: 8px; margin: 12px 0 16px; flex-wrap: wrap; }
+    #foldNav a { font-size: 12px; color: var(--muted); text-decoration: none; border: 1px solid var(--line);
+                 border-radius: 20px; padding: 5px 12px; background: #fff; }
+    #foldNav a:hover { border-color: var(--air); color: var(--ink); }
+    .ladder { display: flex; flex-direction: column; gap: 0; margin: 10px 0 14px; }
+    .rung { display: flex; align-items: center; gap: 10px; font-size: 12.5px; }
+    .rung .dot { width: 12px; height: 12px; border-radius: 50%; border: 2px solid #C4CFC7;
+                 flex-shrink: 0; background: #fff; }
+    .rung .dot.ok { background: var(--moss-bg); border-color: var(--moss); }
+    .rung .dot.pending { border-color: var(--pollen); }
+    .rung .stem { width: 2px; height: 14px; background: var(--line); margin-left: 5px; }
+    .rung .lbl { color: var(--muted); }
+    .rung .lbl b { color: var(--ink); font-weight: 600; }
+    .commit-block { border-bottom: 1px solid var(--line-soft); padding: 8px 0; }
+    .commit-head { font-size: 12.5px; color: var(--muted); margin-bottom: 2px; }
+    footer.site { margin-top: 26px; font-size: 11.5px; color: var(--faint); line-height: 1.7; }
+    footer.site a { color: var(--air); }
+    #scatterPanel { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+    .audit-dot{width:16px;height:16px;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 6px rgba(0,0,0,.35);position:relative}
+    .audit-dot::after{content:'';position:absolute;inset:-6px;border-radius:50%;border:2px solid currentColor;opacity:.45;animation:ping 2s ease-out infinite}
+    @keyframes ping{0%{transform:scale(.5);opacity:.7}100%{transform:scale(1.15);opacity:0}}
+    #guide{position:sticky;top:0;z-index:30;background:color-mix(in srgb,var(--card) 88%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line-soft);padding:8px 2px}
+    details.params{font-size:12px;color:var(--muted)}details.params summary{cursor:pointer;color:var(--air)}
+    @media (max-width: 900px) { .hero { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
-  <header>
+  <a class="skip" href="#pairGrid">Skip to sensor pairs</a>
+  <div class="air" aria-hidden="true"></div>
+  <header class="top">
+    <span class="dot" aria-hidden="true"></span>
     <h1>AeroLoop</h1>
-    <div class="subtitle">The independent auditor for air-quality data — every correction proven on a chronological holdout, every rejected idea kept.</div>
-    <a href="/scene" style="margin-left:auto;font-size:12px;color:#a78bfa;text-decoration:none;letter-spacing:.06em">3D London audit scene →</a>
+    <span class="sub">the independent auditor for air-quality data</span>
+    <a class="ghost" href="/scene">Ghost Over London — night scene →</a>
+    <button class="theme" id="btnDashTheme" onclick="toggleDashTheme()" title="toggle light / dark">☾ dark</button>
   </header>
-  <main>
-    <div class="card">
-      <h2>Control</h2>
-      <div class="controls">
-        <label>Station</label>
-        <select id="station">
-          <option value="bloomsbury">Bloomsbury</option>
-          <option value="marylebone">Marylebone</option>
-          <option value="north_kensington">North Kensington</option>
-          <option value="westminster">Westminster</option>
-        </select>
-        <label>Strategy</label>
-        <select id="strategy"><option value="latest">latest (incumbent)</option><option value="v1-baseline">v1-baseline</option></select>
-        <button onclick="demoDay()">Simulate 24h (all stations)</button>
-        <button onclick="predict()">Predict PM2.5</button>
-        <button onclick="groundTruth()">Fetch Ground Truth</button>
-        <button class="primary" onclick="selfImprove()">Self-Improve</button>
+  <div class="wrap">
+    <section class="hero">
+      <div class="hero-card">
+        <div class="eyebrow">Proof of Air · scored on future data it never tuned on</div>
+        <h2>Is this sensor telling the truth?</h2>
+        <p class="lede">Pick a low-cost sensor beside an official reference monitor. We show you if it's
+          <b>fit</b>, <b>drifting</b>, or <b>unfit</b> — with the held-out proof, not the sales sheet.</p>
+        <div class="hero-search">
+          <input id="heroSearch" placeholder="Search sensor id — e.g. SDS011…" oninput="filterPairs(this.value)" />
+          <button class="primary" onclick="tryExample()">Try an example</button>
+        </div>
+        <div class="hero-proof" id="heroProof" aria-live="polite">Loading proof counts…</div>
       </div>
-      <div id="status">Click “Simulate 24h” to give the agent a day of memories, then “Self-Improve”.</div>
-      <div class="hint" id="truthHint">Ground truth source is labelled per reading in the DB.</div>
-    </div>
-    <div class="card">
-      <h2>Evaluation — <span id="evalStrategy">latest</span></h2>
-      <div id="metrics"><span style="color:#6b7386">No matched pairs yet.</span></div>
-    </div>
-    <div class="card wide">
-      <h2>Predicted vs measured PM2.5</h2>
-      <canvas id="chart" height="160"></canvas>
-    </div>
-    <div class="card">
-      <h2>Agent's report</h2>
-      <div id="report"><span style="color:#6b7386">Run “Self-Improve” — the agent will explain what it learned and what it changed.</span></div>
-    </div>
-    <div class="card">
-      <h2>Strategy memory <span style="color:#6b7386;font-weight:400;text-transform:none">— rejected versions stay as ghosts</span></h2>
-      <table>
-        <thead><tr><th>Version</th><th>Parent</th><th>Params</th><th>What it learned</th></tr></thead>
-        <tbody id="strategies"><tr><td colspan="4" style="color:#6b7386">—</td></tr></tbody>
-      </table>
-    </div>
-    <div class="card wide">
-      <h2>Tournament <span style="color:#6b7386;font-weight:400;text-transform:none">— SERV Reasoning proposers vs baselines: same prompt, same holdout windows</span></h2>
-      <div class="controls">
-        <button class="primary" onclick="runTournament()">Run tournament</button>
-        <span id="tournamentMeta" style="font-size:12px;color:#8b93a7"></span>
+      <div class="hero-card breath-card">
+        <svg width="220" height="70" viewBox="0 0 220 70" aria-hidden="true" style="margin-bottom:6px">
+          <g fill="none" stroke-width="1.6">
+            <path class="wind" d="M4 18 H120" stroke="#0E7C9E" opacity=".6"/>
+            <path class="wind" d="M4 34 H140" stroke="#7C5CF6" opacity=".5"/>
+            <path class="wind" d="M4 50 H110" stroke="#1B7A3D" opacity=".5"/>
+          </g>
+          <rect x="138" y="22" width="14" height="26" rx="3" fill="#fff" stroke="#0E7C9E" stroke-width="1.6"/>
+          <circle cx="145" cy="18" r="3" fill="#0E7C9E"/>
+          <rect x="168" y="14" width="34" height="42" rx="4" fill="#fff" stroke="#1A2B22" stroke-width="1.6"/>
+          <circle cx="185" cy="30" r="5" fill="#1B7A3D"/>
+          <rect x="174" y="40" width="22" height="4" rx="2" fill="#E3EAE3"/>
+        </svg>
+        <div class="breath" aria-hidden="true"></div>
+        <div id="verdictLine">Breathe in. The verdict appears here.</div>
+        <div class="hint">Daylight twin of the night Ghost — same city, same wind, same math.</div>
       </div>
-      <table style="margin-top:12px">
-        <thead><tr>
-          <th>Proposer</th><th>Model</th><th>SERV</th><th>Status</th>
-          <th>Holdout MAE</th><th>Windows won</th><th>Eligible</th>
-          <th>Soundness gate</th><th>Latency</th><th>Tokens</th><th>Cost</th>
-        </tr></thead>
-        <tbody id="leaderboard"><tr><td colspan="11" style="color:#6b7386">Run a tournament to see the leaderboard.</td></tr></tbody>
-      </table>
-      <div class="hint">Accuracy-eligible = beats the incumbent's whole-holdout MAE AND wins a strict majority of chronological sub-windows. Eligible proposals get a Reppo peer soundness verdict.</div>
+    </section>
+    <div id="guide" style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 2px" aria-label="guided tour">
+      <span class="gstep" id="gs1">① Pick a pair below — start with amber or red</span>
+      <span class="gstep" id="gs2">② Read the held-out proof</span>
+      <span class="gstep" id="gs3">③ Run the tournament → check the anchor trail</span>
     </div>
-    <div class="card">
-      <h2>Commitments <span style="color:#6b7386;font-weight:400;text-transform:none">— proof a prediction predates its truth</span></h2>
-      <div class="controls">
-        <label>Prediction id</label>
-        <input id="commitId" type="number" min="1" style="width:80px;background:#151c2e;color:#dfe6f3;border:1px solid #3b4a6b;padding:7px 10px;border-radius:7px;font-size:13px" />
-        <button onclick="lookupCommitment()">Verify</button>
+    <style>.gstep{font-size:12px;color:var(--muted);background:var(--card);border:1px solid var(--line);border-radius:20px;padding:6px 12px;transition:all .3s}.gstep.done{color:#1B7A3D;border-color:#1B7A3D;background:#E3F2E6}.gstep.now{color:#0E7C9E;border-color:#0E7C9E;box-shadow:0 0 0 3px rgba(14,124,158,.15)}</style>
+    <div id="statBand"></div>
+    <div id="intro" style="display:none">
+      <b>Start here.</b>
+      <span>Each card is a <b>pair</b> — a low-cost sensor beside an official reference monitor. Colour is the audit verdict:
+        <span class="badge kept">fit</span> <span class="badge drifting">drifting</span> <span class="badge rejected">unfit</span>.
+        Click a card for the calibration proof; the dots show which EPA checks passed.</span>
+      <button class="dismiss" onclick="dismissIntro()" title="dismiss">✕</button>
+    </div>
+    <nav id="foldNav">
+      <a href="#foldEngine" onclick="return jumpFold('foldEngine')">Inside the correction engine</a>
+      <a href="#foldProof" onclick="return jumpFold('foldProof')">Verification trail</a>
+      <a href="#foldDemo" onclick="return jumpFold('foldDemo')">Live demo — London</a>
+    </nav>
+    <main>
+      <div class="card wide">
+        <h2>Where we have proof <span class="plain">— green = fit, amber = drifting, red = unfit. Grey = listed but not yet audited.</span></h2>
+        <div id="mapDiv" style="height:420px;border-radius:12px;border:1px solid var(--line)"></div>
+        <div class="legend" id="mapLegend">
+          <span><i class="swatch" style="background:#0E7C9E"></i> qualifying reference site</span>
+          <span><i class="swatch" style="background:#1B7A3D"></i> audited sensor — fit</span>
+          <span><i class="swatch" style="background:#B7791F"></i> audited — drifting</span>
+          <span><i class="swatch" style="background:#C0392B"></i> audited — unfit</span>
+          <span><i class="swatch" style="background:#D4DAD4"></i> listed sensor (unaudited)</span>
+        </div>
       </div>
-      <div id="commitResult" style="margin-top:10px;font-size:13px;color:#9aa3b8">Each prediction is SHA-256 committed at save time; daily Merkle roots anchor to Bitcoin (OTS) and Base.</div>
-      <table style="margin-top:12px">
-        <thead><tr><th>Date</th><th>Leaves</th><th>Root</th><th>OTS</th><th>Base</th></tr></thead>
-        <tbody id="anchorsTable"><tr><td colspan="5" style="color:#6b7386">—</td></tr></tbody>
-      </table>
-    </div>
-    <div class="card">
-      <h2>Trust (reference sites) <span style="color:#6b7386;font-weight:400;text-transform:none">— indicative EPA-target comparison on 24-h means, not certification</span></h2>
-      <div class="controls">
-        <label>Subject</label>
-        <select id="trustSubject" onchange="loadTrust()" style="background:#151c2e;color:#dfe6f3;border:1px solid #3b4a6b;padding:7px 10px;border-radius:7px;font-size:13px">
-          <option value="cams_raw">cams_raw</option>
-          <option value="incumbent">incumbent (holdout only)</option>
-        </select>
+      <div class="card wide">
+        <h2>Sensor audits <span class="plain">— each card is a sensor↔reference pair; click for the plain-English proof</span></h2>
+        <div class="controls">
+          <label>Species</label>
+          <select id="auditSpecies" onchange="loadSensorTrust()">
+            <option value="PM25">PM2.5</option>
+            <option value="PM10">PM10</option>
+          </select>
+          <span id="auditSummary" style="font-size:12px;color:var(--muted)"></span>
+        </div>
+        <div class="pair-grid" id="pairGrid" style="margin-top:12px"></div>
+        <div id="scatterPanel" style="display:none;margin-top:16px"></div>
+        <div class="hint" id="auditNote"></div>
       </div>
-      <table style="margin-top:10px">
-        <thead><tr><th>Site</th><th>Status</th><th>Days</th><th>R²</th><th>Slope</th><th>Intercept</th><th>RMSE</th><th>NRMSE</th><th>Drift</th></tr></thead>
-        <tbody id="trustTable"><tr><td colspan="9" style="color:#6b7386">—</td></tr></tbody>
-      </table>
-      <div class="hint" id="trustNote" style="margin-top:8px"></div>
-    </div>
-  </main>
+      <details class="fold wide" id="foldEngine" data-kind="engine" ontoggle="onFold(this)" open>
+        <summary><span class="fold-title">Inside the correction engine</span>
+          <span class="fold-sub">— proposers vs the incumbent on held-out data; kept and rejected strategies stay on record</span></summary>
+        <div class="fold-body">
+          <div class="card wide">
+            <h2>Contenders <span class="plain">— every proposer gets the same past, scored on the same hidden future. To win: beat the incumbent and win most weeks.</span></h2>
+            <div class="controls">
+              <button class="primary" onclick="runTournament()">Run tournament</button>
+              <span id="tournamentMeta" style="font-size:12px;color:var(--muted)"></span>
+            </div>
+            <div style="overflow-x:auto">
+            <table style="margin-top:12px;min-width:640px">
+              <thead><tr>
+                <th></th><th>Proposer</th><th>Status</th>
+                <th>Holdout MAE</th><th>Window lanes</th><th>Windows won</th><th>Eligible</th>
+                <th>Soundness gate</th>
+              </tr></thead>
+              <tbody id="leaderboard"><tr><td colspan="8" style="color:var(--faint)">Run a tournament to see the leaderboard.</td></tr></tbody>
+            </table>
+            </div>
+            <div class="hint">Solid lines = proposers, dashed = incumbent. Eligible = beats incumbent MAE AND wins a strict majority of windows, then gets a Reppo soundness verdict. Click a row for model, cost and latency detail.</div>
+          </div>
+          <div class="card wide">
+            <h2>Strategy memory <span class="plain">— rejected versions stay as ghosts 👻</span></h2>
+            <table>
+              <thead><tr><th>Version</th><th>Parent</th><th>Params</th><th>What it learned</th></tr></thead>
+              <tbody id="strategies"><tr><td colspan="4" style="color:var(--faint)">—</td></tr></tbody>
+            </table>
+            <h2 style="margin-top:16px">Rejected graveyard <span class="plain">— ghosts kept, never deleted. Hover for why holdout killed them.</span></h2>
+            <div class="ghost-grid" id="ghostGrid"><span style="color:var(--faint);font-size:12px">Loading ghosts…</span></div>
+          </div>
+        </div>
+      </details>
+      <details class="fold wide" id="foldProof" data-kind="proof" ontoggle="onFold(this)">
+        <summary><span class="fold-title">Verification trail</span>
+          <span class="fold-sub">— every prediction committed at save, batched into daily anchors; model output scored vs references</span></summary>
+        <div class="fold-body">
+          <div class="card">
+            <h2>Proof <span class="plain">— each prediction's chain of custody</span></h2>
+            <div id="ladders"><span style="color:var(--faint)">Loading…</span></div>
+            <details style="margin-top:10px">
+              <summary style="font-size:12px;color:var(--muted);cursor:pointer">Verify a specific prediction id</summary>
+              <div class="controls" style="margin-top:8px">
+                <label>Prediction id</label>
+                <input id="commitId" type="number" min="1" style="width:90px" />
+                <button onclick="lookupCommitment()">Verify</button>
+              </div>
+              <div id="commitResult" style="margin-top:8px;font-size:13px;color:var(--muted)"></div>
+            </details>
+            <table style="margin-top:12px">
+              <thead><tr><th>Date</th><th>Leaves</th><th>Root</th><th>OTS</th><th>Base</th></tr></thead>
+              <tbody id="anchorsTable"><tr><td colspan="5" style="color:var(--faint)">—</td></tr></tbody>
+            </table>
+          </div>
+          <div class="card">
+            <h2>Model trust <span class="plain">— model output vs reference sites, indicative, not certification</span></h2>
+            <div class="controls">
+              <label>Subject</label>
+              <select id="trustSubject" onchange="loadTrust()">
+                <option value="cams_raw">cams_raw</option>
+                <option value="incumbent">incumbent (holdout only)</option>
+              </select>
+            </div>
+            <table style="margin-top:10px">
+              <thead><tr><th>Site</th><th>Status</th><th>Days</th><th>R²</th><th>Slope</th><th>Intercept</th><th>RMSE</th><th>NRMSE</th><th>Drift</th></tr></thead>
+              <tbody id="trustTable"><tr><td colspan="9" style="color:var(--faint)">—</td></tr></tbody>
+            </table>
+            <div class="hint" id="trustNote" style="margin-top:8px"></div>
+          </div>
+        </div>
+      </details>
+      <details class="fold wide" id="foldDemo" data-kind="demo" ontoggle="onFold(this)">
+        <summary><span class="fold-title">Live demo — London</span>
+          <span class="fold-sub">— the predict/evaluate sandbox on synthetic stand-in ground truth</span></summary>
+        <div class="fold-body">
+          <div class="card">
+            <h2>Live demo — London stations</h2>
+            <div class="controls">
+              <label>Station</label>
+              <select id="station">
+                <option value="bloomsbury">Bloomsbury</option>
+                <option value="marylebone">Marylebone</option>
+                <option value="north_kensington">North Kensington</option>
+                <option value="westminster">Westminster</option>
+              </select>
+              <label>Strategy</label>
+              <select id="strategy"><option value="latest">latest (incumbent)</option><option value="v1-baseline">v1-baseline</option></select>
+              <button onclick="demoDay()">Simulate 24h (all stations)</button>
+              <button onclick="predict()">Predict PM2.5</button>
+              <button onclick="groundTruth()">Fetch Ground Truth</button>
+              <button class="primary" onclick="selfImprove()">Self-Improve</button>
+            </div>
+            <div id="status">Click “Simulate 24h” to give the agent a day of memories, then “Self-Improve”.</div>
+            <div class="hint" id="truthHint">Ground truth source is labelled per reading in the DB.</div>
+            <div class="hint">This predict/evaluate loop is a London demo — full-network audits run as batch jobs (Sensor audits above).</div>
+          </div>
+          <div class="card">
+            <h2>Evaluation — <span id="evalStrategy">latest</span></h2>
+            <div id="metrics"><span style="color:var(--faint)">No matched pairs yet.</span></div>
+          </div>
+          <div class="card wide">
+            <h2>Predicted vs measured PM2.5</h2>
+            <canvas id="chart" height="160"></canvas>
+          </div>
+          <div class="card">
+            <h2>Agent's report</h2>
+            <div id="report"><span style="color:var(--faint)">Run “Self-Improve” — the agent will explain what it learned and what it changed.</span></div>
+          </div>
+        </div>
+      </details>
+    </main>
+    <div id="certificate" aria-label="audit certificate"></div>
+    <footer class="site">
+      AeroLoop is the independent auditor for air-quality data — scored on future data it never tuned on.
+      Rejected strategies are kept as ghosts. Statuses are indicative, not certification; EU comparisons are indicative.
+      Contains Breathe London data licensed under the <a href="https://www.breathelondon.org/">Open Government Licence v3.0</a>.
+      Synthetic readings are labelled <code>synthetic</code> in the DB and API.
+    </footer>
+  </div>
+  <div id="passport" role="dialog" aria-modal="true"><div class="shade" onclick="closePassport()"></div><div class="sheet" id="passportSheet"></div></div>
+  <div id="embedBadge"></div>
   <script>
+    try {
+      const q = new URLSearchParams(location.search).get('theme');
+      document.body.dataset.theme = q || localStorage.getItem('aeroloop-dash-theme') || 'light';
+    } catch (e) { document.body.dataset.theme = 'light'; }
     const API = '';
+    function syncThemeBtn() {
+      const b = document.getElementById('btnDashTheme');
+      if (b) b.textContent = document.body.dataset.theme === 'dark' ? '☀ light' : '☾ dark';
+    }
+    function toggleDashTheme() {
+      document.body.dataset.theme = document.body.dataset.theme === 'dark' ? 'light' : 'dark';
+      try { localStorage.setItem('aeroloop-dash-theme', document.body.dataset.theme); } catch (e) {}
+      syncThemeBtn();
+      try {
+        if (window._tileLayer) {
+          const dark = document.body.dataset.theme === 'dark';
+          window._tileLayer.setUrl(dark
+            ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+            : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png');
+        }
+      } catch (e) {}
+      const sc = document.getElementById('scatterPanel');
+      if (sc && sc.style.display !== 'none') { sc.classList.remove('swap'); void sc.offsetWidth; sc.classList.add('swap'); }
+    }
+    function countUp(el, to) {
+      if (!el || !isFinite(to)) return;
+      const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (reduced) { el.textContent = Number(to).toLocaleString(); return; }
+      const t0 = performance.now(), dur = 900;
+      (function f(t) {
+        const k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+        el.textContent = Math.round(to * e).toLocaleString();
+        if (k < 1) requestAnimationFrame(f);
+      })(t0);
+    }
+    function observeReveals() {
+      const io = new IntersectionObserver(es => es.forEach(e => {
+        if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+      }), { threshold: .12 });
+      document.querySelectorAll('.hero-card, .card, details.fold').forEach(el => {
+        el.classList.add('reveal'); io.observe(el);
+      });
+    }
     const status = t => document.getElementById('status').textContent = t;
+    const STATUS_COLOR = { fit: '#1B7A3D', drifting: '#B7791F', unfit: '#C0392B',
+                           insufficient_evidence: '#8A978E' };
+    const badgeClass = s => s === 'fit' ? 'kept' : s === 'drifting' ? 'drifting' : 'rejected';
+    const fmt = (v, d=3) => (v === null || v === undefined || Number.isNaN(v)) ? '—' : (+v).toFixed(d).replace(/\.?0+$/, '');
+
+    const foldsLoaded = {};
+    function onFold(el) {
+      const kind = el.dataset.kind;
+      if (!el.open || foldsLoaded[kind]) return;
+      foldsLoaded[kind] = true;
+      if (kind === 'demo') refreshDemo();
+      else if (kind === 'engine') { loadLatestTournament(); loadStrategies(); loadGhosts(); }
+      else if (kind === 'proof') { loadLadders(); loadAnchors(); loadTrust(); }
+    }
+    function jumpFold(id) {
+      const el = document.getElementById(id);
+      if (!el) return false;
+      el.open = true;
+      onFold(el);
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return false;
+    }
+    function filterPairs(q) {
+      q = (q || '').toLowerCase();
+      document.querySelectorAll('.pair-tile').forEach(t => {
+        t.style.display = !q || t.id.toLowerCase().includes(q) ? '' : 'none';
+      });
+    }
+    function tryExample() {
+      const tiles = [...document.querySelectorAll('.pair-tile')].filter(t => t.style.display !== 'none');
+      const pick = tiles.find(t => t.innerHTML.includes('drifting')) || tiles.find(t => t.innerHTML.includes('fit')) || tiles[0];
+      if (pick) { document.getElementById('heroSearch').value = ''; filterPairs(''); selectPair(pick.id.replace('tile-',''), true); }
+      else { document.getElementById('auditSummary').scrollIntoView({ behavior: 'smooth' }); }
+    }
+    function setVerdict(uid, verdictHtml) {
+      document.getElementById('verdictLine').innerHTML = `<b>${uid}</b> — ${verdictHtml}`;
+    }
 
     async function refresh() {
+      loadStatsBand();
+      loadMap();
+      loadSensorTrust();
+      if (foldsLoaded.demo) refreshDemo();
+    }
+
+    async function refreshDemo() {
       const strat = document.getElementById('strategy').value;
       const d = await (await fetch(API + '/evaluate?strategy_version=' + strat)).json();
       document.getElementById('evalStrategy').textContent = strat;
@@ -155,15 +522,335 @@
             ? 'Ground truth here is a deterministic synthetic stand-in for DEFRA AURN — flagged as such in the DB.'
             : `Mixed truth sources, each labelled per reading in the DB: ${srcs.join(' · ')}`;
       document.getElementById('metrics').innerHTML = d.n === 0
-        ? '<span style="color:#6b7386">No matched pairs yet.</span>'
+        ? '<span style="color:var(--faint)">No matched pairs yet.</span>'
         : `<span class="metric"><div class="val">${d.mae}</div><div class="lbl">MAE</div></span>
            <span class="metric"><div class="val">${d.rmse}</div><div class="lbl">RMSE</div></span>
            <span class="metric"><div class="val">${d.bias}</div><div class="lbl">Bias</div></span>
            <span class="metric"><div class="val">${d.n}</div><div class="lbl">n</div></span>`;
       drawChart();
-      loadStrategies();
-      loadAnchors();
-      loadTrust();
+    }
+
+    async function loadStatsBand() {
+      const d = await (await fetch(API + '/overview')).json();
+      const nets = Object.entries(d.reference_networks || {});
+      const q = nets.reduce((a, [, n]) => a + n.qualifying, 0);
+      const sensors = Object.values(d.sensors || {}).reduce((a, s) => a + s.total, 0);
+      const audits = Object.values(d.sensor_audits || {}).reduce((a, s) => a + s.scored, 0);
+      const chips = [
+        `<span class="chip"><b data-count="${nets.length}">0</b>reference networks<span class="sub">${nets.map(([n]) => n).join(' · ')}</span></span>`,
+        `<span class="chip"><b data-count="${q}">0</b>qualifying reference sites<span class="sub">probed, not metadata</span></span>`,
+        `<span class="chip"><b data-count="${sensors}">0</b>sensors listed</span>`,
+        `<span class="chip"><b data-count="${audits}">0</b>audited pairs</span>`,
+      ];
+      Object.entries(d.sensor_audits || {}).forEach(([sp, a]) => {
+        const parts = Object.entries(a.statuses).map(([st, n]) =>
+          `<span class="badge ${badgeClass(st)}" style="margin-left:4px">${st} ${n}</span>`).join('');
+        chips.push(`<span class="chip">${sp === 'PM25' ? 'PM2.5' : sp} audits${parts}</span>`);
+      });
+      document.getElementById('statBand').innerHTML = chips.join('');
+      document.getElementById('heroProof').innerHTML =
+        `<b data-count="${sensors}">0</b> sensors sniffed · <b data-count="${q}">0</b> qualifying references · <b data-count="${audits}">0</b> audited pairs · scored on future data it never tuned on`;
+      try {
+        document.querySelectorAll('#statBand [data-count], #heroProof [data-count]').forEach(el =>
+          countUp(el, +el.dataset.count));
+      } catch (e) {}
+      const e = d.engine || {}, setSub = (id, txt) => {
+        const el = document.querySelector(`#${id} .fold-sub`);
+        if (el) el.textContent = txt;
+      };
+      setSub('foldEngine', `— proposers vs the incumbent on held-out data · ${e.strategies || 0} strategies on record · ${e.strategies_rejected || 0} rejected kept · ${e.tournament_runs || 0} tournament runs`);
+      setSub('foldProof', `— ${e.committed_predictions || 0} committed predictions · ${e.anchors || 0} daily anchors · model vs reference scores`);
+    }
+
+    let leafletMap = null, bgLayers = null, auditLayers = null, bgDrawn = false; let fittedSp = {};
+    function prettyParams(p){ if(!p||typeof p!=='object') return '—'; const keep=['bias','humidity_coef','wind_coef','precip_coef','kind']; const parts=[]; if(p.kind) parts.push(p.kind); ['bias','humidity_coef','wind_coef','precip_coef'].forEach(k=>{ if(p[k]!==undefined) parts.push(`${k.replace('_coef','')} ${p[k]}`); }); if(p.features) parts.push(p.features.length+' feats'); return parts.slice(0,4).join(' · ')||'—'; }
+    let mapData = null;
+    async function loadMap() {
+      if (typeof L === 'undefined') return;
+      if (!mapData) mapData = await (await fetch(API + '/map-data')).json();
+      if (!leafletMap) {
+        leafletMap = L.map('mapDiv', { scrollWheelZoom: false, preferCanvas: true }).setView([52.1, 2.6], 6);
+        let tileUrl = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+        try { tileUrl = (await (await fetch(API + '/config')).json()).basemap_url || tileUrl; } catch (e) {}
+        const wantDark = document.body.dataset.theme === 'dark';
+        if (wantDark && tileUrl.includes('light_all')) tileUrl = tileUrl.replace('light_all', 'dark_all');
+        if (!wantDark && tileUrl.includes('dark_all')) tileUrl = tileUrl.replace('dark_all', 'light_all');
+        window._tileLayer = L.tileLayer(tileUrl, {
+          attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/">CARTO</a>',
+          maxZoom: 18,
+        }).addTo(leafletMap);
+        leafletMap.on('focus', () => leafletMap.scrollWheelZoom.enable());
+        leafletMap.on('blur', () => leafletMap.scrollWheelZoom.disable());
+        bgLayers = L.layerGroup().addTo(leafletMap);
+        auditLayers = L.layerGroup().addTo(leafletMap);
+      }
+      drawMap();
+    }
+
+    function drawMap() {
+      if (!leafletMap || !mapData) return;
+      const sp = document.getElementById('auditSpecies').value;
+      const audits = mapData.audits.filter(a => a.species === sp);
+      const bounds = [];
+      if (!bgDrawn) {
+        bgDrawn = true;
+        const auditedAny = new Set(mapData.audits.map(a => a.uid));
+        mapData.sensors.filter(s => s.lat && s.lon).forEach(s => {
+          if (auditedAny.has(s.uid)) return;
+          L.circleMarker([s.lat, s.lon], { radius: s.indoor ? 1 : 2, color: '#D4DAD4',
+            weight: 0, fillOpacity: s.indoor ? .18 : .28, fillColor: '#B9C6BD', interactive: false })
+            .addTo(bgLayers);
+        });
+        const seenRef = new Set();
+        mapData.references.forEach(r => {
+          if (r.lat == null || r.lon == null || seenRef.has(r.code)) return;
+          seenRef.add(r.code);
+          const icon = L.divIcon({ className: '', iconSize: [9, 9],
+            html: '<div style="width:9px;height:9px;background:#0E7C9E;border:1px solid #fff;box-shadow:0 0 0 1px #0E7C9E"></div>' });
+          L.marker([r.lat, r.lon], { icon })
+            .bindTooltip(`${r.code} · ${r.name || ''} · ${r.network}`)
+            .addTo(bgLayers);
+          bounds.push([r.lat, r.lon]);
+        });
+      }
+      auditLayers.clearLayers();
+      audits.forEach(a => {
+        if (a.sensor_lat == null || a.ref_lat == null) return;
+        const col = STATUS_COLOR[a.status] || '#8A978E';
+        L.polyline([[a.sensor_lat, a.sensor_lon], [a.ref_lat, a.ref_lon]],
+          { color: col, weight: 1.5, opacity: .55, dashArray: '4 3' }).addTo(auditLayers);
+      });
+      const auditBounds = [];
+      audits.forEach(a => {
+        if (a.sensor_lat == null) return;
+        const col = STATUS_COLOR[a.status] || '#8A978E';
+        const icon = L.divIcon({ className: '', iconSize: [16, 16],
+          html: `<div class="audit-dot" style="background:${col};color:${col}"></div>` });
+        const m = L.marker([a.sensor_lat, a.sensor_lon], { icon });
+        m.bindTooltip(`${a.uid} → ${a.reference} (${Math.round(a.distance_m)} m) · ${a.status}`);
+        m.on('click', () => {
+          const sel = document.getElementById('auditSpecies');
+          if (sel.value !== a.species) { sel.value = a.species; loadSensorTrust(); }
+          selectPair(a.uid, true);
+          document.getElementById('pairGrid').scrollIntoView({ behavior: 'smooth' });
+        });
+        m.addTo(auditLayers);
+        auditBounds.push([a.sensor_lat, a.sensor_lon]);
+        if (a.ref_lat != null) auditBounds.push([a.ref_lat, a.ref_lon]);
+      });
+      if (auditBounds.length && !fittedSp[sp]) { fittedSp[sp] = true; leafletMap.fitBounds(auditBounds, { padding: [40, 40] }); }
+    }
+
+    let pairCache = {};
+    function shortVerdict(r) {
+      const s = r.score || {}, dl = s.daily || {};
+      if (s.status === 'insufficient_evidence') return `Not enough days (${s.n_days}/${s.total_days}) to score.`;
+      const failed = CHECKS.filter(([k]) => s.epa_checks && s.epa_checks[k] === false).map(([,l]) => l);
+      const bias = dl.bias != null ? `${dl.bias >= 0 ? '+' : ''}${fmt(dl.bias,1)} µg/m³` : null;
+      if (!failed.length && !(s.drift && s.drift.drift_flag))
+        return `Tracks the reference${bias ? ` · bias ${bias}` : ''}. Fit.`;
+      if (s.drift && s.drift.drift_flag && !failed.length)
+        return `Passes EPA checks but bias shifted — drifting.`;
+      return `Fails ${failed.slice(0,2).join(' · ')}${bias ? ` · bias ${bias}` : ''}.`;
+    }
+    async function loadSensorTrust() {
+      const sp = document.getElementById('auditSpecies').value;
+      const rows = await (await fetch(API + '/sensor-trust?species=' + sp)).json();
+      pairCache = Object.fromEntries(rows.map(r => [r.uid, r]));
+      const counts = {};
+      rows.forEach(r => { const s = (r.score || {}).status || '?'; counts[s] = (counts[s] || 0) + 1; });
+      document.getElementById('auditSummary').textContent = rows.length
+        ? `${rows.length} pairs · ` + Object.entries(counts).map(([s, n]) => `${n} ${s}`).join(' · ') +
+          (rows[0].window_start ? ` · ${rows[0].window_start} → ${rows[0].window_end}` : '')
+        : '';
+      document.getElementById('pairGrid').innerHTML = rows.length
+        ? rows.map((r, i) => pairTile(r, i)).join('')
+        : '<span style="color:var(--faint)">No sensor audits yet — run backend/sensor_audit.py.</span>';
+      document.getElementById('auditNote').textContent = rows.length
+        ? (rows[0].score || {}).standard || '' : '';
+      document.getElementById('scatterPanel').style.display = 'none';
+      drawMap();
+      if (rows.length) {
+        const firstFit = rows.find(r => (r.score||{}).status === 'fit')
+          || rows.find(r => (r.score||{}).status === 'drifting') || rows[0];
+        selectPair(firstFit.uid, false);
+      }
+    }
+
+    const CHECKS = [
+      ['completeness_ge_75pct', 'complete ≥75%'],
+      ['r2_ge_0_70', 'R² ≥0.70'],
+      ['slope_within_0_65_1_35', 'slope 0.65–1.35'],
+      ['intercept_within_pm5', 'intercept ±5'],
+      ['rmse_le_7_or_nrmse_le_30pct', 'RMSE ≤7 or NRMSE ≤30%'],
+    ];
+
+    function pairTile(r, i) {
+      const s = r.score || {}, pts = s.daily_points || [];
+      const spark = sparkline(pts, 220, 46);
+      const checks = CHECKS.map(([k, lbl]) => {
+        const v = s.epa_checks ? s.epa_checks[k] : undefined;
+        const cls = v === true ? 'pass' : v === false ? 'fail' : 'na';
+        return `<span class="check ${cls}" title="${lbl}">${v === true ? '✓' : v === false ? '✗' : '·'}</span>`;
+      }).join('');
+      const rail = STATUS_COLOR[s.status] || '#E3EAE3';
+      return `<div class="pair-tile" id="tile-${r.uid}" onclick="selectPair('${r.uid}', true)"
+        style="border-left:5px solid ${rail};animation-delay:${Math.min(i * 25, 250)}ms">
+        <div class="head">
+          <span class="uid">${r.uid}</span>
+          <span class="badge ${badgeClass(s.status)}">${s.status || '—'}</span>
+        </div>
+        ${spark}
+        <div class="verdict">${shortVerdict(r)} <a href="#/sensor/${r.uid}" onclick="event.stopPropagation();openPassport('${r.uid}')" style="font-size:11px">Passport →</a></div>
+        <div class="checks">${checks}</div>
+        <div class="meta">${r.sensor_type || ''} · ${Math.round(r.distance_m)} m from ${r.reference} · ${r.paired_hours} paired h</div>
+      </div>`;
+    }
+
+    function sparkline(pts, w, h) {
+      if (!pts.length) return `<svg width="${w}" height="${h}"></svg>`;
+      const vals = pts.flatMap(p => [p.subject, p.reference]);
+      const lo = Math.min(...vals), hi = Math.max(...vals), span = Math.max(.01, hi - lo);
+      const x = i => 4 + (w - 8) * i / Math.max(1, pts.length - 1);
+      const y = v => h - 5 - (h - 10) * (v - lo) / span;
+      const line = (k, col, dash) =>
+        `<polyline fill="none" stroke="${col}" stroke-width="1.8" ${dash ? 'stroke-dasharray="3,2"' : ''}
+           points="${pts.map((p, i) => x(i) + ',' + y(p[k])).join(' ')}"/>`;
+      return `<svg width="${w}" height="${h}" style="display:block">${line('reference', '#9AA5B1', true)}${line('subject', '#0E7C9E', false)}</svg>`;
+    }
+
+    function flyToPair(uid) {
+      try {
+        if (!leafletMap || !mapData) return;
+        const a = (mapData.audits || []).find(x => x.uid === uid);
+        if (!a || a.sensor_lat == null) return;
+        const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (reduced) { leafletMap.setView([a.sensor_lat, a.sensor_lon], Math.max(leafletMap.getZoom(), 9)); return; }
+        leafletMap.flyTo([a.sensor_lat, a.sensor_lon], Math.max(leafletMap.getZoom(), 10), { duration: 1.1 });
+      } catch (e) {}
+    }
+    async function selectPair(uid, scroll) {
+      const r = pairCache[uid] ||
+        (await (await fetch(API + '/sensor-trust?species=' + document.getElementById('auditSpecies').value)).json())
+          .find(x => x.uid === uid);
+      if (!r) return;
+      document.querySelectorAll('.pair-tile').forEach(t => t.classList.remove('selected'));
+      const tile = document.getElementById('tile-' + uid);
+      if (tile) { void tile.offsetWidth; tile.classList.add('selected'); }
+      renderScatter(r);
+      try { setVerdict(uid, shortVerdict(r)); } catch (e) {}
+      try { markGuide(2); } catch (e) {}
+      if (scroll) { flyToPair(uid); const sp2 = document.getElementById('scatterPanel'); if (sp2) setTimeout(() => sp2.scrollIntoView({ behavior: 'smooth', block: 'center' }), 120); }
+    }
+
+    function renderScatter(r) {
+      const s = r.score || {}, pts = s.daily_points || [], dl = s.daily || {};
+      const W = 460, H = 300, pad = 42;
+      const vals = pts.flatMap(p => [p.subject, p.reference]);
+      const hi = Math.max(8, Math.ceil(Math.max(...vals) * 1.15));
+      const x = v => pad + (W - pad - 12) * v / hi;
+      const y = v => H - 30 - (H - 30 - 16) * v / hi;
+      const m = 5;
+      const grid = Array.from({ length: m + 1 }, (_, i) => {
+        const v = hi * i / m;
+        return `<line x1="${x(v)}" y1="${y(v)}" x2="${x(v)}" y2="${y(0)}" stroke="#EDF0EB"/>
+                <line x1="${x(0)}" y1="${y(v)}" x2="${x(hi)}" y2="${y(v)}" stroke="#EDF0EB"/>
+                <text x="${x(v)}" y="${y(0) + 14}" fill="#8A978E" font-size="9" text-anchor="middle">${v.toFixed(0)}</text>
+                <text x="${x(0) - 6}" y="${y(v) + 3}" fill="#8A978E" font-size="9" text-anchor="end">${v.toFixed(0)}</text>`;
+      }).join('');
+      const band = `<polygon points="${x(0)},${y(0 * .65)} ${x(hi)},${y(hi * .65)} ${x(hi)},${y(hi * 1.35)} ${x(0)},${y(0 * 1.35)}"
+        fill="#1B7A3D" opacity="0.08"/>`;
+      const eq = `<line x1="${x(0)}" y1="${y(0)}" x2="${x(hi)}" y2="${y(hi)}" stroke="#8A978E" stroke-dasharray="5,4"/>`;
+      const fit = (dl.slope != null && dl.intercept != null)
+        ? `<line x1="${x(0)}" y1="${y(dl.intercept)}" x2="${x(hi)}"
+             y2="${y(dl.slope * hi + dl.intercept)}" stroke="#7C5CF6" stroke-width="2"/>` : '';
+      const dots = pts.map(p =>
+        `<circle cx="${x(p.reference)}" cy="${y(p.subject)}" r="4.5" fill="#0E7C9E" opacity=".85">
+           <title>${p.day}: sensor ${p.subject.toFixed(1)} vs ref ${p.reference.toFixed(1)} (${p.n_hours} h)</title></circle>`).join('');
+      const checksHtml = CHECKS.map(([k, lbl]) => {
+        const v = s.epa_checks ? s.epa_checks[k] : undefined;
+        const cls = v === true ? 'pass' : v === false ? 'fail' : 'na';
+        return `<div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)">
+          <span class="check ${cls}">${v === true ? '✓' : v === false ? '✗' : '·'}</span>${lbl}</div>`;
+      }).join('');
+      const failed = CHECKS.filter(([k]) => s.epa_checks && s.epa_checks[k] === false)
+        .map(([, lbl]) => lbl);
+      const why = s.status === 'insufficient_evidence'
+        ? `Not enough qualifying days (${s.n_days} of ${s.total_days}) to score.`
+        : failed.length
+          ? `Why <b>${s.status}</b>: fails ${failed.join(' · ')}.` +
+            (s.drift && s.drift.drift_flag ? ' Also flagged for drift.' : '')
+          : s.drift && s.drift.drift_flag
+            ? `Why <b>drifting</b>: passes all EPA checks, but bias shifted between halves — AeroLoop heuristic, not EPA.`
+            : 'Passes all checks — tracks the reference inside every band.';
+      const el = document.getElementById('scatterPanel');
+      el.classList.remove('swap'); void el.offsetWidth; el.classList.add('swap');
+      el.style.display = 'grid';
+      el.style.gridTemplateColumns = '460px 1fr';
+      el.style.gap = '20px';
+      el.innerHTML = `
+        <svg width="${W}" height="${H}" style="background:#FAFBF7;border:1px solid var(--line);border-radius:12px" role="img" aria-label="Sensor vs reference daily means">${grid}${band}${eq}${fit}${dots}
+          <text x="${W/2}" y="${H-8}" fill="#8A978E" font-size="10" text-anchor="middle">reference daily mean (µg/m³)</text>
+          <text x="12" y="${H/2}" fill="#8A978E" font-size="10" text-anchor="middle" transform="rotate(-90 12 ${H/2})">sensor daily mean</text>
+        </svg>
+        <div>
+          <div style="font-size:15px;font-weight:700;margin-bottom:4px">${r.uid}
+            <span style="color:var(--muted);font-weight:400">vs ${r.reference}${r.ref_name ? ' · ' + r.ref_name : ''}</span>
+            <span class="badge ${badgeClass(s.status)}" style="margin-left:8px">${s.status}</span></div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:6px">${r.sensor_type || ''} · ${Math.round(r.distance_m)} m ·
+            ${r.paired_hours} paired h · ${s.n_days}/${s.total_days} days · window ${r.window_start} → ${r.window_end}</div>
+          <div style="font-size:14px;margin-bottom:12px;background:#fff;border:1px solid var(--line);border-left:5px solid ${STATUS_COLOR[s.status] || '#C4CFC7'};padding:10px 12px;border-radius:0 10px 10px 0">${why}</div>
+          <div class="controls" style="margin-bottom:10px">
+            <button onclick="openPassport('${r.uid}')">Passport</button>
+            <button onclick="renderCertificate('${r.uid}')">Certificate</button>
+            <button onclick="copyEmbed('${r.uid}')">Embed</button>
+          </div>
+          <details><summary style="font-size:12px;color:var(--muted);cursor:pointer">Show EPA detail</summary>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 24px;margin-top:10px">
+            <div>${checksHtml}</div>
+            <div style="font-size:12.5px;color:var(--muted);line-height:1.9">
+              slope <b style="color:var(--ink)">${fmt(dl.slope, 2)}</b> · intercept ${fmt(dl.intercept, 2)} ·
+              R² ${fmt(dl.r2, 2)}<br>
+              RMSE ${fmt(dl.rmse, 2)} · NRMSE ${fmt(dl.nrmse, 2)} · bias ${dl.bias != null ? (dl.bias >= 0 ? '+' : '') + fmt(dl.bias, 1) : '—'} µg/m³<br>
+              drift shift ${s.drift && s.drift.bias_shift != null ? fmt(s.drift.bias_shift, 1) : '—'} µg/m³
+              ${s.drift && s.drift.drift_flag ? '<span class="badge drifting" style="margin-left:6px">drift</span>' : ''}
+              <div style="margin-top:8px;font-size:11px;color:var(--faint)">Dashed = line of equality · purple = fitted regression · shaded = EPA slope band.</div>
+            </div>
+          </div></details>
+        </div>`;
+    }
+
+    async function loadLadders() {
+      const rows = await (await fetch(API + '/commitments/recent?limit=6')).json();
+      const el = document.getElementById('ladders');
+      if (!rows.length) {
+        el.innerHTML = `<span style="color:var(--faint)">No committed predictions yet —
+          predictions are SHA-256 committed at save; run “Predict PM2.5” in the demo to create one.</span>`;
+        return;
+      }
+      el.innerHTML = rows.map(p => {
+        const a = p.anchor || {};
+        const rung = (ok, pending, lbl) =>
+          `<div class="rung"><span class="dot ${ok ? 'ok' : pending ? 'pending' : ''}"></span><span class="lbl">${lbl}</span></div>`;
+        const stem = '<div class="rung"><span class="stem"></span></div>';
+        return `<div class="commit-block">
+          <div class="commit-head">prediction <b>#${p.prediction_id}</b> · <code>${p.station_id}</code> · ${p.timestamp.slice(0, 16)}</div>
+          <div class="ladder">
+            ${rung(p.hash_matches === true, p.hash_matches === null,
+              `hash committed <code>${(p.commit_hash || '').slice(0, 12)}…</code> ${p.hash_matches === false ? '<em style="color:var(--brick)">MISMATCH</em>' : '· recomputed match'}`)}
+            ${stem}
+            ${rung(!!a.batch_date, false, a.batch_date
+              ? `in anchor batch <code>${a.batch_date}</code> · merkle proof ${a.proof_valid === true ? 'valid' : a.proof_valid === false ? '<em style="color:var(--brick)">INVALID</em>' : '—'}`
+              : 'not yet in an anchor batch')}
+            ${stem}
+            ${rung(a.ots_status === 'upgraded' || a.ots_status === 'stamped' || !!a.ots_status && a.ots_status !== 'none', !a.ots_status,
+              `OpenTimestamps ${a.ots_status || '—'}`)}
+            ${stem}
+            ${rung(!!a.explorer_url, !a.explorer_url,
+              a.explorer_url ? `anchored — <a href="${a.explorer_url}" style="color:var(--beam)">base tx</a>` : 'Base anchor —')}
+          </div>
+        </div>`;
+      }).join('');
     }
 
     async function demoDay() {
@@ -181,6 +868,7 @@
       const d = await r.json();
       if (d.prediction_id === undefined) { status('Predict failed: ' + JSON.stringify(d)); return; }
       status(`Predicted ${d.prediction.predicted_pm25} ug/m3 (id ${d.prediction_id}, strategy ${d.prediction.strategy_version}).`);
+      if (foldsLoaded.proof) loadLadders();
     }
 
     async function groundTruth() {
@@ -207,20 +895,18 @@
         </dl>
         <div style="margin-top:14px">
           <span class="badge ${d.improved ? 'kept' : 'rejected'}">${d.improved ? 'KEPT' : 'REJECTED'} on holdout</span>
-          <span style="color:#9aa3b8;font-size:13px;margin-left:10px">
+          <span style="color:var(--muted);font-size:13px;margin-left:10px">
             MAE ${d.before.mae} → ${d.after.mae} · tune n=${d.tune_n}, holdout n=${d.holdout_n}
             · params via ${d.params_source} · model: ${d.model_used}
           </span>
         </div>
-        ${(d.challengers || []).map(c => `<div style="margin-top:10px;font-size:13px;color:#9aa3b8">
+        ${(d.challengers || []).map(c => `<div style="margin-top:10px;font-size:13px;color:var(--muted)">
           Challenger <code>${c.name}</code>: ${c.result.error ? 'unavailable (' + c.result.error.slice(0,80) + '…)' : 'holdout MAE ' + c.result.mae + ' vs ' + Math.min(d.before.mae, d.after.mae)}</div>`).join('')}`;
       status(d.improved
         ? `Agent kept a new strategy (parent ${d.incumbent_version}) — it improved on unseen data.`
         : `Agent rejected its own proposal — holdout MAE did not improve. Honest failure, still remembered.`);
       refresh();
     }
-
-    const fmt = (v, d=3) => (v === null || v === undefined || Number.isNaN(v)) ? '—' : (+v).toFixed(d).replace(/\.?0+$/, '');
 
     async function runTournament() {
       status('Tournament running — proposers competing on the same holdout…');
@@ -238,13 +924,37 @@
       if (!d.detail) renderTournament(d, true);
     }
 
+    function laneChart(proposals, windows, incScores) {
+      if (!windows) return '—';
+      const w = 160, h = 40;
+      const all = proposals.flatMap(p =>
+        (p.holdout && p.holdout.windows ? p.holdout.windows.map(s => s.mae) : [])
+          .concat(incScores ? incScores.map(s => s.mae) : [])).filter(v => v != null);
+      if (!all.length) return '—';
+      const lo = Math.min(...all) * .95, hi = Math.max(...all) * 1.05, span = hi - lo || 1;
+      const x = i => 3 + (w - 6) * i / Math.max(1, windows - 1);
+      const y = v => h - 4 - (h - 8) * (v - lo) / span;
+      let out = `<svg class="lane-draw" width="${w}" height="${h}" role="img" aria-label="MAE per holdout window">`;
+      if (incScores) out += `<polyline fill="none" stroke="#8A978E" stroke-width="1.4" stroke-dasharray="4,3"
+        points="${incScores.map((s, i) => s.mae == null ? '' : x(i) + ',' + y(s.mae)).join(' ')}"><title>incumbent</title></polyline>`;
+      const cols = ['#0E7C9E', '#7C5CF6', '#B7791F', '#1B7A3D', '#C0392B', '#0EA5A5', '#A855F7', '#D97706'];
+      proposals.forEach((p, i) => {
+        const ws = p.holdout && p.holdout.windows;
+        if (!ws) return;
+        out += `<polyline style="animation-delay:${i * 120}ms" fill="none" stroke="${cols[i % cols.length]}" stroke-width="2" opacity=".9"
+          points="${ws.map((s, j) => s.mae == null ? '' : x(j) + ',' + y(s.mae)).join(' ')}"><title>${p.proposer}</title></polyline>`;
+      });
+      return out + '</svg>';
+    }
+
     function renderTournament(d, quiet) {
       const incMae = d.incumbent_scores.whole.mae;
+      const lanes = laneChart(d.proposals, d.windows, d.incumbent_scores.windows);
       document.getElementById('tournamentMeta').textContent =
         `run #${d.id} · incumbent ${d.incumbent_version} MAE ${incMae} · ` +
         `tune n=${d.tune_n}, holdout n=${d.holdout_n} in ${d.windows} windows · ` +
         `outcome: ${d.outcome}${d.strategy_version ? ' → ' + d.strategy_version : ''}`;
-      document.getElementById('leaderboard').innerHTML = d.proposals.map(p => {
+      document.getElementById('leaderboard').innerHTML = d.proposals.map((p, i) => {
         const mae = p.holdout && p.holdout.whole ? p.holdout.whole.mae : null;
         const delta = (mae !== null && !Number.isNaN(mae)) ? ` (${mae - incMae >= 0 ? '+' : ''}${(mae - incMae).toFixed(3)})` : '';
         const gate = p.gate_status === 'ineligible' ? 'n/a (predictor)'
@@ -253,29 +963,44 @@
           : '—';
         const statusCell = p.status === 'ok' ? 'ok'
           : `${p.status}${p.error ? ` — ${p.error}` : ''}`;
-        const toks = p.prompt_tokens != null ? `${p.prompt_tokens}+${p.completion_tokens}` : '—';
         const ev = p.provider_evidence || p;
-        const finish = ev.finish_reason && ev.finish_reason !== 'stop'
-          ? ` · ${ev.finish_reason}` : '';
-        const prov = ev.response_id
-          ? `<div class="hint" style="margin-top:2px">resp <code>${ev.response_id}</code>${finish}</div>` : '';
-        return `<tr${p.status === 'skipped' || p.status === 'error' ? ' class="rejected"' : ''}>
-          <td><code>${p.proposer}</code>${p.note ? `<div class="hint" style="margin-top:2px">${p.note}</div>` : ''}${prov}</td>
-          <td>${p.model || '—'}</td>
-          <td>${p.uses_serv ? 'yes' : 'no'}</td>
+        const toks = p.prompt_tokens != null ? `${p.prompt_tokens}+${p.completion_tokens}` : '—';
+        const detail = [
+          p.model ? `model <code>${p.model}</code>` : null,
+          `SERV ${p.uses_serv ? 'yes' : 'no'}`,
+          p.latency_ms != null ? `latency ${p.latency_ms} ms` : null,
+          `tokens ${toks}`,
+          p.cost_usd != null ? `cost $${p.cost_usd}` : null,
+          ev.response_id ? `resp <code>${ev.response_id}</code>` : null,
+          ev.finish_reason && ev.finish_reason !== 'stop' ? `finish ${ev.finish_reason}` : null,
+          p.note || null,
+          p.params ? `<details class="params"><summary>why these params — ${prettyParams(p.params)}</summary><code>${JSON.stringify(p.params)}</code></details>` : null,
+        ].filter(Boolean).join(' · ') || 'no detail';
+        const rowCls = p.status === 'skipped' || p.status === 'error' ? 'prop-row rejected' : 'prop-row';
+        return `<tr class="${rowCls}" onclick="togglePropDetail(${i})" style="cursor:pointer" tabindex="0">
+          <td style="color:var(--faint);font-size:11px" id="pc-${i}">▸</td>
+          <td><code>${p.proposer}</code></td>
           <td>${statusCell}</td>
           <td>${fmt(mae)}${delta}</td>
+          <td>${lanes}</td>
           <td>${p.windows_won !== null && p.windows_won !== undefined ? p.windows_won + '/' + d.windows : '—'}</td>
           <td>${p.proposer === 'tabpfn' ? 'ineligible' : (p.eligible ? 'yes' : 'no')}</td>
           <td>${gate}</td>
-          <td>${p.latency_ms != null ? p.latency_ms + ' ms' : '—'}</td>
-          <td>${toks}</td>
-          <td>${p.cost_usd != null ? '$' + p.cost_usd : '—'}</td>
-        </tr>`;
+        </tr>
+        <tr id="pd-${i}" style="display:none"><td colspan="8" style="font-size:12px;color:var(--muted);background:var(--slate-bg)">${detail}</td></tr>`;
       }).join('');
+      try { markGuide(4); } catch (e) {}
       if (!quiet) status(d.winner
         ? `Tournament winner: ${d.winner} → saved as ${d.strategy_version}.`
         : `No proposal survived (${d.outcome}) — best attempt kept as ghost ${d.strategy_version}.`);
+    }
+
+    function togglePropDetail(i) {
+      const row = document.getElementById('pd-' + i);
+      const caret = document.getElementById('pc-' + i);
+      const open = row.style.display !== 'none';
+      row.style.display = open ? 'none' : 'table-row';
+      caret.textContent = open ? '▸' : '▾';
     }
 
     async function loadAnchors() {
@@ -284,8 +1009,8 @@
         <tr><td><code>${a.batch_date}</code></td><td>${a.n_leaves}</td>
         <td><code>${(a.root || '').slice(0, 12)}…</code></td>
         <td>${a.ots_status || '—'}</td>
-        <td>${a.base_tx ? `<a href="https://${a.base_chain_id === 84532 ? 'sepolia.' : ''}basescan.org/tx/${a.base_tx}" style="color:#a78bfa">${a.base_status || 'submitted'}</a>` : (a.base_status || '—')}</td>
-        </tr>`).join('') : '<tr><td colspan="5" style="color:#6b7386">No anchors yet.</td></tr>';
+        <td>${a.base_tx ? `<a href="https://${a.base_chain_id === 84532 ? 'sepolia.' : ''}basescan.org/tx/${a.base_tx}" style="color:var(--beam)">${a.base_status || 'submitted'}</a>` : (a.base_status || '—')}</td>
+        </tr>`).join('') : '<tr><td colspan="5" style="color:var(--faint)">No anchors yet.</td></tr>';
     }
 
     async function loadTrust() {
@@ -295,12 +1020,12 @@
       const rows = Object.entries(d.sites || {});
       document.getElementById('trustTable').innerHTML = rows.length ? rows.map(([site, s]) => `
         <tr><td><code>${site}</code></td>
-        <td><span class="badge ${s.status === 'fit' ? 'kept' : 'rejected'}">${s.status}</span></td>
+        <td><span class="badge ${badgeClass(s.status)}">${s.status}</span></td>
         <td>${s.n_days}</td><td>${f(s.daily && s.daily.r2)}</td>
         <td>${f(s.daily && s.daily.slope)}</td><td>${f(s.daily && s.daily.intercept)}</td>
         <td>${f(s.daily && s.daily.rmse)}</td><td>${f(s.daily && s.daily.nrmse)}</td>
         <td>${s.drift && s.drift.drift_flag ? 'yes' : 'no'}</td></tr>`).join('')
-        : '<tr><td colspan="9" style="color:#6b7386">No laqn:* sites in this database.</td></tr>';
+        : '<tr><td colspan="9" style="color:var(--faint)">No laqn:* sites in this database.</td></tr>';
       document.getElementById('trustNote').textContent =
         (d.standard || '') + (d.window === 'holdout' ? ' · scored on the holdout split only' : '');
     }
@@ -322,24 +1047,80 @@
           target after anchor: ${d.target_after_existed_by === null ? '—' : badge(d.target_after_existed_by)}</div>
         ${d.anchor ? `<div style="margin-top:6px">anchor <code>${d.anchor.batch_date}</code> ·
           merkle proof valid: ${d.anchor.proof_valid === null ? '—' : badge(d.anchor.proof_valid)} · OTS ${d.anchor.ots_status || '—'} ·
-          ${d.anchor.explorer_url ? `<a href="${d.anchor.explorer_url}" style="color:#a78bfa">base tx</a>` : 'base —'}</div>` : '<div style="margin-top:6px">not yet in an anchor batch</div>'}
+          ${d.anchor.explorer_url ? `<a href="${d.anchor.explorer_url}" style="color:var(--beam)">base tx</a>` : 'base —'}</div>` : '<div style="margin-top:6px">not yet in an anchor batch</div>'}
         <div style="margin-top:6px"><code>${d.commit_hash}</code></div>`;
     }
 
+    function markGuide(step) {
+      try {
+        ['gs1','gs2','gs3'].forEach((id, i) => {
+          const el = document.getElementById(id); if (!el) return;
+          const n = i + 1;
+          el.classList.toggle('done', n < step);
+          el.classList.toggle('now', n === step);
+        });
+      } catch (e) {}
+    }
+    function sensorUrl(uid) { return location.origin + location.pathname + '#/sensor/' + encodeURIComponent(uid); }
+    function openPassport(uid) {
+      const r = pairCache[uid];
+      if (!r) { location.hash = '#/sensor/' + encodeURIComponent(uid); return; }
+      const s = r.score || {}, dl = s.daily || {};
+      document.getElementById('passportSheet').innerHTML = `
+        <div class="eyebrow">Sensor passport · persistent URL below</div>
+        <h3 style="margin:4px 0 8px">${r.uid} <span class="badge ${badgeClass(s.status)}">${s.status || '—'}</span></h3>
+        <div style="font-size:13px;color:var(--muted)">${r.sensor_type || ''} · ${Math.round(r.distance_m)} m from ${r.reference}${r.ref_name ? ' · ' + r.ref_name : ''} · ${r.paired_hours} paired h · ${s.n_days}/${s.total_days} days</div>
+        <div style="font-size:14px;margin:12px 0;padding:10px 12px;background:var(--slate-bg);border-radius:10px">${shortVerdict(r)}</div>
+        <div style="font-size:12.5px;color:var(--muted);line-height:1.9">slope ${fmt(dl.slope, 2)} · intercept ${fmt(dl.intercept, 2)} · R² ${fmt(dl.r2, 2)} · RMSE ${fmt(dl.rmse, 2)} · bias ${dl.bias != null ? fmt(dl.bias, 1) : '—'} µg/m³${s.drift && s.drift.drift_flag ? ' · <b>drift flagged</b> (AeroLoop heuristic)' : ''}</div>
+        <div class="controls" style="margin-top:12px">
+          <button onclick="renderCertificate('${r.uid}')">Audit certificate (print)</button>
+          <button onclick="copyEmbed('${r.uid}')">Copy embed badge</button>
+          <button onclick="closePassport()">Close</button>
+        </div>
+        <div style="font-size:11.5px;color:var(--faint);margin-top:10px;word-break:break-all">${sensorUrl(r.uid)}</div>
+        <div style="font-size:11px;color:var(--faint);margin-top:6px">Statuses vs US EPA 24-h targets, indicative not certification. Contains Breathe London data under <a href="https://www.breathelondon.org/">OGL v3.0</a>.</div>`;
+      document.getElementById('passport').classList.add('open');
+      try { history.replaceState(null, '', '#/sensor/' + encodeURIComponent(uid)); } catch (e) {}
+    }
+    function closePassport() {
+      document.getElementById('passport').classList.remove('open');
+      try { history.replaceState(null, '', location.pathname); } catch (e) {}
+    }
+    function renderCertificate(uid) {
+      const r = pairCache[uid]; if (!r) return;
+      const s = r.score || {}, dl = s.daily || {};
+      document.getElementById('certificate').innerHTML = `
+        <div class="eyebrow">AeroLoop audit certificate — indicative, not certification</div>
+        <h2 style="margin:4px 0">${r.uid} → ${s.status || 'unscored'}</h2>
+        <div style="font-size:13px">${shortVerdict(r)}</div>
+        <div style="font-size:12.5px;margin-top:8px">vs ${r.reference}${r.ref_name ? ' · ' + r.ref_name : ''} · ${r.paired_hours} paired h · window ${r.window_start} → ${r.window_end}<br>
+        slope ${fmt(dl.slope, 2)} · R² ${fmt(dl.r2, 2)} · RMSE ${fmt(dl.rmse, 2)} · bias ${dl.bias != null ? fmt(dl.bias, 1) : '—'} µg/m³ · scored on held-out data it never tuned on</div>
+        <div style="font-size:11px;color:#555;margin-top:10px">Prediction commitments are self-reported; only the anchor time is publicly proven. EU/EPA comparisons indicative. Contains Breathe London data under OGL v3.0 (https://www.breathelondon.org/). Synthetic rows labelled synthetic.</div>
+        <div class="controls" style="margin-top:10px"><button onclick="window.print()">Print / save PDF</button></div>`;
+      document.getElementById('certificate').style.display = 'block';
+      document.getElementById('certificate').scrollIntoView({ behavior: 'smooth' });
+    }
+    function copyEmbed(uid) {
+      const code = `<iframe src="${location.origin}${location.pathname}?embed=${encodeURIComponent(uid)}" width="280" height="120" style="border:1px solid #E3EAE3;border-radius:12px"></iframe>`;
+      try { navigator.clipboard.writeText(code); status('Embed badge copied — paste into any dashboard.'); } catch (e) { prompt('Copy embed code:', code); }
+    }
+    async function loadGhosts() {
+      try {
+        const rows = await (await fetch(API + '/strategies')).json();
+        const ghosts = rows.filter(s => /rejected$/.test(s.version || ''));
+        document.getElementById('ghostGrid').innerHTML = ghosts.length ? ghosts.map(g => `
+          <div class="ghost-card" title="${(g.description || 'rejected on holdout').replace(/"/g, '&quot;')}">👻 <code>${g.version}</code><br>
+          <span style="color:var(--muted)">parent <code>${g.parent || '—'}</code> · ${g.description || 'lost on holdout, kept on record'}</span></div>`).join('')
+          : '<span style="color:var(--faint);font-size:12px">No ghosts yet — rejected strategies will appear here, never deleted.</span>';
+      } catch (e) {}
+    }
     async function loadStrategies() {
       const rows = await (await fetch(API + '/strategies')).json();
-      document.getElementById('strategies').innerHTML = rows.map(s => {
-        const rejected = s.version.endsWith('-rejected');
-        return `<tr class="${rejected ? 'rejected' : ''}">
-          <td class="version"><code>${s.version}</code></td>
-          <td>${s.parent_version || '—'}</td>
-          <td><code>${s.params}</code></td>
-          <td>${s.description}</td></tr>`;
-      }).join('');
-      const sel = document.getElementById('strategy');
-      const opts = ['latest', ...rows.filter(s => !s.version.endsWith('-rejected') && !s.params.includes('tabpfn')).map(s => s.version)];
-      const cur = sel.value;
-      sel.innerHTML = opts.map(v => `<option value="${v}" ${v === cur ? 'selected' : ''}>${v === 'latest' ? 'latest (incumbent)' : v}</option>`).join('');
+      document.getElementById('strategies').innerHTML = rows.length ? rows.map(s => `
+        <tr class="${s.rejected ? 'rejected' : ''}"><td class="version"><code>${s.version}</code></td>
+        <td><code>${s.parent || '—'}</code></td><td title='${JSON.stringify(s.params)}'>${prettyParams(typeof s.params==='string'?JSON.parse(s.params||'{}'):s.params)}</td>
+        <td>${s.description || ''}</td></tr>`).join('')
+        : '<tr><td colspan="4" style="color:var(--faint)">—</td></tr>';
     }
 
     async function drawChart() {
@@ -348,28 +1129,68 @@
       const ctx = c.getContext('2d');
       const W = c.width = c.offsetWidth, H = c.height;
       ctx.clearRect(0, 0, W, H);
-      if (!errs.length) { ctx.fillStyle = '#6b7386'; ctx.font = '13px system-ui'; ctx.fillText('No matched pairs yet.', 10, 30); return; }
+      if (!errs.length) { ctx.fillStyle = '#8A978E'; ctx.font = '13px system-ui'; ctx.fillText('No matched pairs yet.', 10, 30); return; }
       const pts = errs.map(e => ({ t: e.timestamp, p: e.predicted, a: e.actual }));
       const all = pts.flatMap(p => [p.p, p.a]);
       const lo = Math.min(...all), hi = Math.max(...all), span = Math.max(1, hi - lo);
       const x = i => 40 + (W - 60) * i / Math.max(1, pts.length - 1);
       const y = v => H - 25 - (H - 45) * (v - lo) / span;
-      ctx.strokeStyle = '#232a3a';
+      ctx.strokeStyle = '#E3EAE3';
       for (let g = 0; g <= 4; g++) { const gy = 20 + (H - 45) * g / 4;
         ctx.beginPath(); ctx.moveTo(40, gy); ctx.lineTo(W - 20, gy); ctx.stroke(); }
       const line = (key, color, dash) => { ctx.strokeStyle = color; ctx.lineWidth = 1.8; ctx.setLineDash(dash);
         ctx.beginPath(); pts.forEach((p, i) => i ? ctx.lineTo(x(i), y(p[key])) : ctx.moveTo(x(i), y(p[key]))); ctx.stroke(); ctx.setLineDash([]); };
-      line('a', '#38bdf8', []); line('p', '#a78bfa', [5, 4]);
-      ctx.fillStyle = '#8b93a7'; ctx.font = '11px system-ui';
-      ctx.fillText('measured', 44, 14); ctx.fillStyle = '#38bdf8'; ctx.fillRect(32, 8, 8, 8);
-      ctx.fillStyle = '#8b93a7'; ctx.fillText('predicted', 110, 14); ctx.fillStyle = '#a78bfa'; ctx.fillRect(100, 8, 8, 8);
-      ctx.fillStyle = '#6b7386'; ctx.fillText(`min ${lo.toFixed(1)} / max ${hi.toFixed(1)} ug/m3`, W - 150, 14);
+      line('a', '#0E7C9E', []); line('p', '#7C5CF6', [5, 4]);
+      ctx.fillStyle = '#5C6B62'; ctx.font = '11px system-ui';
+      ctx.fillText('measured', 44, 14); ctx.fillStyle = '#0E7C9E'; ctx.fillRect(32, 8, 8, 8);
+      ctx.fillStyle = '#5C6B62'; ctx.fillText('predicted', 110, 14); ctx.fillStyle = '#7C5CF6'; ctx.fillRect(100, 8, 8, 8);
+      ctx.fillStyle = '#8A978E'; ctx.fillText(`min ${lo.toFixed(1)} / max ${hi.toFixed(1)} ug/m3`, W - 150, 14);
     }
 
+    function dismissIntro() {
+      localStorage.setItem('aeroloop-intro-dismissed', '1');
+      document.getElementById('intro').style.display = 'none';
+    }
+    if (!localStorage.getItem('aeroloop-intro-dismissed'))
+      document.getElementById('intro').style.display = 'flex';
+    try {
+      const emb = new URLSearchParams(location.search).get('embed');
+      const cert = new URLSearchParams(location.search).get('certificate');
+      if (emb) {
+        document.body.classList.add('embed');
+        fetch(API + '/sensor-trust').then(r => r.json()).then(rows => {
+          const r = rows.find(x => x.uid === emb) || rows[0];
+          if (!r) return;
+          const s = r.score || {};
+          document.getElementById('embedBadge').innerHTML =
+            `<div style="border:1px solid #E3EAE3;border-radius:12px;padding:10px 12px;background:#fff;font-size:12px">
+              <b>AeroLoop</b> · ${r.uid} → <b>${s.status || '—'}</b><br>
+              <span style="color:#5C6B62">scored on held-out data · <a href="${sensorUrl(r.uid)}">verify →</a></span></div>`;
+        });
+        window.__embedMode = true;
+      } else {
+        if (cert) { setTimeout(() => { loadSensorTrust().then(() => renderCertificate(cert)); }, 400); }
+      const m = (location.hash || '').match(/^#\/sensor\/(.+)/);
+      if (m) setTimeout(() => { loadSensorTrust().then(() => openPassport(decodeURIComponent(m[1]))); }, 400);
+      window.addEventListener('hashchange', () => {
+        const mm = (location.hash || '').match(/^#\/sensor\/(.+)/);
+        if (mm) openPassport(decodeURIComponent(mm[1])); else closePassport();
+      });
+      }
+    } catch (e) {}
+    try { markGuide(1); } catch (e) {}
+    try {
+      const io = new IntersectionObserver(es => { es.forEach(en => { if (!en.isIntersecting) return;
+        if (en.target.id === 'foldEngine') markGuide(3);
+        if (en.target.id === 'foldProof') markGuide(4); }); }, { threshold: .25 });
+      ['foldEngine','foldProof'].forEach(id => { const el = document.getElementById(id); if (el) io.observe(el); });
+    } catch (e) {}
+    syncThemeBtn();
+    try { observeReveals(); } catch (e) {}
     document.getElementById('strategy').addEventListener('change', refresh);
-    window.addEventListener('resize', drawChart);
+    window.addEventListener('resize', () => { if (foldsLoaded.demo) drawChart(); if (leafletMap) leafletMap.invalidateSize(); });
     refresh();
-    loadLatestTournament();
+    document.querySelectorAll('details.fold[open]').forEach(el => onFold(el));
   </script>
 </body>
 </html>

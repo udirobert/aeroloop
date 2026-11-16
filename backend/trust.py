@@ -138,6 +138,10 @@ def score_triples(triples: List[Triple],
 
     return {
         "status": status,
+        "daily_points": [
+            {"day": d, "subject": s, "reference": r, "n_hours": n}
+            for d, s, r, n in daily
+        ],
         "standard": STANDARD,
         "n_days": n_days,
         "total_days": total_days,

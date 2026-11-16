@@ -26,6 +26,11 @@ const COL = {
   beacon: 0x67e8f9,
   wisp: 0xe9d5ff,
 };
+// Daybreak Audit — daylight twin, same sim. Toggle via HUD button or ?theme=day.
+const COL_DAY = { bg: 0xEAF2F0, buildings: 0x8AA0B5, towers: 0x4A6B8A, roads: 0x9DB8AD, beacon: 0x0E7C9E, wisp: 0x8A978E };
+let DAY = false;
+try { DAY = (new URLSearchParams(location.search).get('theme') || document.body.dataset.theme) === 'day'; } catch (e) {}
+function spectralDay(t) { tmpC.setHSL(0.13 - 0.11 * t, 0.72, 0.52 - 0.12 * t); return tmpC; }
 
 const WIND_VIS_SPEED = 9;   // real direction, dramatized pace
 const HAZE_N = 15000;
@@ -170,7 +175,8 @@ const hazeAge = new Float32Array(HAZE_N);
 const hazeTTL = new Float32Array(HAZE_N);
 const tmpC = new THREE.Color();
 
-function spectral(t) {          // 0..1 → dim violet → hot magenta
+function spectral(t) {          // 0..1 → dim violet → hot magenta (night)
+  if (DAY) return spectralDay(t);
   tmpC.setHSL(0.78 - 0.12 * t, 0.85, 0.28 + 0.35 * t);
   return tmpC;
 }
@@ -490,6 +496,25 @@ if (CAPTURE) {
   tick();
 }
 
+function applyTheme() {
+  document.body.dataset.theme = DAY ? 'day' : 'night';
+  try { localStorage.setItem('aeroloop-scene-theme', DAY ? 'day' : 'night'); } catch (e) {}
+  const b = document.getElementById('btnTheme');
+  if (b) b.textContent = DAY ? '☾ night' : '☀ day';
+  renderer.setClearColor(DAY ? COL_DAY.bg : COL.bg);
+  scene.background = new THREE.Color(DAY ? COL_DAY.bg : COL.bg);
+  scene.fog.color.set(DAY ? COL_DAY.bg : COL.bg);
+  scene.fog.near = DAY ? 4000 : 3500;
+  scene.fog.far = DAY ? 19000 : 17000;
+  bloom.strength = DAY ? 0.15 : 0.55;
+  haze.material.opacity = DAY ? 0.42 : 0.6;
+  haze.material.size = DAY ? 70 : 105;
+  haze.material.blending = DAY ? THREE.NormalBlending : THREE.AdditiveBlending;
+  haze.material.needsUpdate = true;
+}
+const btnTheme = document.getElementById('btnTheme');
+if (btnTheme) btnTheme.onclick = () => { DAY = !DAY; applyTheme(); };
+applyTheme();
 addEventListener('resize', () => {
   camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
