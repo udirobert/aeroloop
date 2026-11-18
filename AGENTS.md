@@ -63,7 +63,14 @@ Netherlands (Milestone 2b): `python reference_sites.py --network luchtmeetnet
 lists sensor.community NL (feed duplicates each sensor ~2× — count unique uids);
 `python sensor_audit.py --species PM25|PM10 --start ... --end ... --out
 ../submission/evidence/<file>.json` scores each verified candidate vs its RIVM
-reference.
+reference. `python backfill_audits.py --species both --weeks N` re-runs that
+audit over earlier windows to grow the corpus (resumable — skips audited
+windows).
+
+TimeNet: `python connectors/build_pm_sensor_audit.py --replace --describe`
+rebuilds the TimeF dataset (`aeroloop/pm-sensor-audit`) from `sensor_audits`
+into `connectors/registry/` (gitignored); pair JSONs in `connectors/.cache`
+make rebuilds offline. See `connectors/README.md`.
 
 Anchoring: `POST /anchors/build?date=YYYY-MM-DD` (or `python anchor_daily.py`)
 builds a day's Merkle batch into `anchors/`, stamps OpenTimestamps and anchors on

@@ -1,0 +1,26 @@
+# yaml-language-server: $schema=https://docs.timenet.ai/schemas/dataset-card-v1.schema.json
+yaml_schema_version: 1
+dataset_id: aeroloop/pm-sensor-audit
+dataset_version: 0.1.0
+name: AeroLoop PM Sensor Audit
+description: >-
+  Hourly particulate-matter series from co-located low-cost sensors
+  (sensor.community, Breathe London) and official reference monitors (LAQN,
+  RIVM Luchtmeetnet), each pair scored by an independent audit: indicative
+  EPA 24-h performance checks plus a drift heuristic. Every audit window
+  yields a trust-status classification, a plain-language verdict with
+  evidence, and a next-24h reference forecasting task.
+license: OTHER
+license_url: https://github.com/udirobert/aeroloop
+domains:
+  - environment
+tags:
+  - air-quality
+  - pm25
+  - pm10
+  - sensors
+  - audit
+  - classification
+  - forecasting
+  - qa
+source_url: https://github.com/udirobert/aeroloop

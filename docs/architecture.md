@@ -58,6 +58,10 @@
   archive.sensor.community history for each verified_candidate (sub-hourly CSVs
   → UTC hourly means; P1→PM10, P2→PM25), aligns with reference network hours,
   feeds triples to trust.score_triples, persists readings, writes evidence JSON.
+- **backfill_audits.py** — resumable audit backfill: re-runs
+  `sensor_audit.audit` over non-overlapping historical windows, skipping
+  windows already in `sensor_audits` (idempotent; `--force` re-audits).
+  Grows the TimeNet corpus — one audit window = one TimeNet record.
 - **db.py** — SQLite: predictions (+commitment columns), ground_readings,
   errors, strategies (incl. `-rejected`), tournament_runs/proposals, anchors,
   reference_sites, sensors, sensor_readings, sensor_audits.
@@ -68,6 +72,11 @@
   coverage map), /anchors (+build, upgrade-ots), /commitments/prediction/{id},
   /commitments/recent, /wind-field, /aq-field, /fields-timeline, /scene-state,
   dashboard (/), scene (/scene), /health.
+- **connectors/** (repo root) — TimeNet dataset connector
+  (`aeroloop/pm-sensor-audit`): exports each audit window as a TimeF record
+  (paired low-cost + reference hourly signals, verdict annotations) with
+  classification, answer and forecasting tasks for TSLM fine-tuning
+  (OpenTSLM hackathon). See `connectors/README.md`.
 
 ## Data flow
 

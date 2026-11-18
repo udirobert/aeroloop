@@ -1,0 +1,2 @@
+timenet[build]>=0.12
+httpx

@@ -29,3 +29,8 @@ video/.thumbnails/
 *.mkv
 *.m4v
 *.avi
+
+# TimeNet connector build artifacts
+connectors/.venv/
+connectors/.cache/
+connectors/registry/
